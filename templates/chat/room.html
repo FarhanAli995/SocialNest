@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Chat &bull; Social Nest{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'chat/chat.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="card chat-room">
+  <header class="chat-room__header">
+    <a href="{% url 'chat:inbox' %}" class="chat-room__back" aria-label="Back to chats">
+      <i class="fa-solid fa-arrow-left"></i>
+    </a>
+    <span class="chat-room__avatar" aria-hidden="true">
+      {% if other_user %}{{ other_user.username|first|upper }}{% else %}?{% endif %}
+    </span>
+    <div class="chat-room__heading">
+      <h1>
+        {% if other_user %}{{ other_user.username }}{% else %}Chat room {{ room.id }}{% endif %}
+      </h1>
+      <span id="chat-status" class="chat-room__status">Connecting...</span>
+    </div>
+  </header>
+
+  <div id="chat-log" class="chat-room__log" aria-live="polite" aria-label="Chat messages">
+    {% for m in chat_messages %}
+      <div class="chat-message {% if m.sender_id == request.user.id %}mine{% else %}theirs{% endif %}" data-id="{{ m.id }}">
+        <span class="chat-message__sender">{{ m.sender.get_username }}</span>
+        <p>{{ m.content|linebreaksbr }}</p>
+        <time datetime="{{ m.timestamp|date:'c' }}">{{ m.timestamp|date:'H:i' }}</time>
+      </div>
+    {% empty %}
+      <p class="chat-room__empty">No messages yet. Say hello!</p>
+    {% endfor %}
+  </div>
+
+  <p id="typing-line" class="chat-room__typing" hidden></p>
+  <form class="chat-room__composer" onsubmit="return false;">
+    <label class="visually-hidden" for="chat-text">Message</label>
+    <input id="chat-text" type="text" maxlength="2000" autocomplete="off" placeholder="Write a message...">
+    <button id="chat-send" type="button">Send</button>
+  </form>
+</section>
+
+{{ room.id|json_script:"room-id" }}
+{{ request.user.id|json_script:"me-id" }}
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  <script src="{% static 'chat/chat.js' %}" defer></script>
+{% endblock %}

@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from accounts.models import Profile
+from accounts.models import Profile, blocked_user_ids
 from notifications.models import Notification
 
 from .forms import CommentForm, PostForm
@@ -18,12 +18,13 @@ def feed(request):
     query = request.GET.get('q', '').strip()
 
     if request.user.is_authenticated:
+        blocked_ids = blocked_user_ids(request.user)
         following_ids = Follow.objects.filter(
             follower=request.user
         ).values_list('following_id', flat=True)
         posts = Post.objects.filter(
             Q(author=request.user) | Q(author_id__in=following_ids)
-        ).select_related('author')
+        ).exclude(author_id__in=blocked_ids).select_related('author')
     else:
         posts = Post.objects.all().select_related('author')
 
@@ -45,6 +46,7 @@ def feed(request):
         suggested_users = (
             User.objects.exclude(pk=request.user.pk)
             .exclude(pk__in=following_ids)
+            .exclude(pk__in=blocked_ids)
             .select_related('profile')[:4]
         )
 
@@ -61,7 +63,11 @@ def explore(request):
     query = request.GET.get('q', '').strip()
 
     posts = Post.objects.all().select_related('author')
-    people = User.objects.select_related('profile').exclude(pk=request.user.pk if request.user.is_authenticated else None)
+    people = User.objects.select_related('profile')
+    if request.user.is_authenticated:
+        blocked_ids = blocked_user_ids(request.user)
+        posts = posts.exclude(author_id__in=blocked_ids)
+        people = people.exclude(pk=request.user.pk).exclude(pk__in=blocked_ids)
 
     if query:
         posts = posts.filter(
@@ -104,7 +110,10 @@ def post_create(request):
 
 
 def post_detail(request, pk):
-    post = get_object_or_404(Post.objects.select_related('author'), pk=pk)
+    posts = Post.objects.select_related('author')
+    if request.user.is_authenticated:
+        posts = posts.exclude(author_id__in=blocked_user_ids(request.user))
+    post = get_object_or_404(posts, pk=pk)
     liked = False
     if request.user.is_authenticated:
         liked = Like.objects.filter(post=post, user=request.user).exists()

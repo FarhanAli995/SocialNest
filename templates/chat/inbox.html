@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Chats &bull; Social Nest{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'chat/chat.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="card chat-inbox-card" aria-labelledby="chat-inbox-heading">
+  <h1 id="chat-inbox-heading">Chats</h1>
+  <ul class="chat-inbox">
+    {% for c in conversations %}
+      <li class="chat-inbox__item">
+        <a class="chat-inbox__link" href="{% url 'chat:room' c.room.id %}">
+          <span class="chat-inbox__avatar" aria-hidden="true">{{ c.other.username|first|upper }}</span>
+          <span class="chat-inbox__details">
+            <strong class="chat-inbox__username">{{ c.other.username }}</strong>
+            <span class="chat-inbox__preview">
+              {% if c.last %}{{ c.last.content|truncatechars:45 }}{% else %}No messages yet.{% endif %}
+            </span>
+          </span>
+          {% if c.unread > 0 %}
+            <span class="chat-inbox__unread" aria-label="{{ c.unread }} unread messages">{{ c.unread }}</span>
+          {% endif %}
+        </a>
+      </li>
+    {% empty %}
+      <li class="chat-inbox__empty">No conversations yet. Start a chat to see it here.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

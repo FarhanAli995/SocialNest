@@ -47,6 +47,10 @@
         </a>
 
         {% if user.is_authenticated %}
+          <a href="{% url 'chat:inbox' %}" class="header-nav__link {% if 'chat' in request.path %}is-active{% endif %}">
+            <i class="fa-regular fa-message"></i><span>Messages</span>
+            {% if chat_unread %}<span class="badge">{{ chat_unread }}</span>{% endif %}
+          </a>
           <a href="{% url 'accounts:own_profile' %}" class="header-avatar" title="{{ user.username }}">
             {% if user.profile.avatar %}
               <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}">

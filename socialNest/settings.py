@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
     'accounts',
     'posts',
     'notifications',
+    'chat',
 ]
 
 MIDDLEWARE = [
@@ -65,12 +67,14 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'socialNest.context_processors.notifications',
+                'chat.context_processors.chat_unread',
             ],
         },
     },
 ]
 
 WSGI_APPLICATION = 'socialNest.wsgi.application'
+ASGI_APPLICATION = 'socialNest.asgi.application'
 
 
 # Database
@@ -142,3 +146,19 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
+
+# Redis alternative for multi-process or production use:
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             'hosts': [('127.0.0.1', 6379)],
+#         },
+#     },
+# }

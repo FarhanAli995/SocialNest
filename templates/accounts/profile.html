@@ -11,14 +11,24 @@
     <div class="profile-actions">
       {% if is_own_profile %}
         <a href="{% url 'accounts:edit_profile' %}" class="btn btn--outline"><i class="fa-regular fa-pen-to-square"></i> Edit Profile</a>
+        <a href="{% url 'accounts:blocked_users' %}" class="btn btn--outline">Blocked users</a>
       {% else %}
+        {% if user.is_authenticated %}
+          <a href="{% url 'chat:start' profile_user.id %}" class="btn btn--primary"><i class="fa-regular fa-comment"></i> Message</a>
+        {% endif %}
         <form method="post" action="{% url 'accounts:follow_toggle' profile_user.username %}" class="inline-form">
           {% csrf_token %}
           {% if is_following %}
-            <button type="submit" class="btn btn--outline"><i class="fa-solid fa-user-check"></i> Following</button>
+            <button type="submit" class="btn btn--outline"><i class="fa-solid fa-user-minus"></i> Unfollow</button>
+          {% elif follows_you %}
+            <button type="submit" class="btn btn--primary"><i class="fa-solid fa-user-plus"></i> Follow Back</button>
           {% else %}
             <button type="submit" class="btn btn--primary"><i class="fa-solid fa-user-plus"></i> Follow</button>
           {% endif %}
+        </form>
+        <form method="post" action="{% url 'accounts:block_toggle' profile_user.username %}" class="inline-form">
+          {% csrf_token %}
+          <button type="submit" class="btn btn--outline">Block</button>
         </form>
       {% endif %}
     </div>

@@ -3,6 +3,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView, LogoutView
+from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -12,7 +13,7 @@ from notifications.models import Notification
 from posts.models import Follow
 
 from .forms import ProfileForm, SignUpForm
-from .models import Profile
+from .models import Profile, UserBlock, users_blocked
 
 
 class CustomLoginView(LoginView):
@@ -55,14 +56,22 @@ def own_profile(request):
 @login_required
 def profile_detail(request, username):
     profile_user = get_object_or_404(User, username=username)
+    if profile_user != request.user and users_blocked(request.user, profile_user):
+        return redirect('posts:feed')
+
     profile, _ = Profile.objects.get_or_create(user=profile_user)
     is_following = Follow.objects.filter(follower=request.user, following=profile_user).exists()
+    follows_you = Follow.objects.filter(
+        follower=profile_user,
+        following=request.user,
+    ).exists()
     return render(request, 'accounts/profile.html', {
         'profile': profile,
         'profile_user': profile_user,
         'posts': profile_user.posts.all(),
         'is_own_profile': profile_user == request.user,
         'is_following': is_following,
+        'follows_you': follows_you,
         'followers_count': profile_user.followers.count(),
         'following_count': profile_user.following.count(),
     })
@@ -99,6 +108,9 @@ def follow_toggle(request, username):
     if target == request.user:
         messages.error(request, 'You cannot follow yourself.')
         return HttpResponseRedirect(reverse('accounts:profile_detail', args=[username]))
+    if users_blocked(request.user, target):
+        messages.error(request, 'You cannot follow a blocked user.')
+        return redirect('posts:feed')
 
     follow, created = Follow.objects.get_or_create(follower=request.user, following=target)
     if not created:
@@ -112,3 +124,40 @@ def follow_toggle(request, username):
         )
         messages.success(request, f'Now following {target.username}.')
     return HttpResponseRedirect(reverse('accounts:profile_detail', args=[username]))
+
+
+@login_required
+@require_POST
+def block_toggle(request, username):
+    target = get_object_or_404(User, username=username)
+    if target == request.user:
+        messages.error(request, 'You cannot block yourself.')
+        return redirect('accounts:own_profile')
+
+    block = UserBlock.objects.filter(blocker=request.user, blocked=target).first()
+    if block:
+        block.delete()
+        messages.success(request, f'Unblocked {target.username}.')
+        return redirect('accounts:blocked_users')
+
+    with transaction.atomic():
+        UserBlock.objects.get_or_create(blocker=request.user, blocked=target)
+        Follow.objects.filter(
+            follower=request.user,
+            following=target,
+        ).delete()
+        Follow.objects.filter(
+            follower=target,
+            following=request.user,
+        ).delete()
+
+    messages.success(request, f'Blocked {target.username}.')
+    return redirect('accounts:own_profile')
+
+
+@login_required
+def blocked_users(request):
+    blocks = UserBlock.objects.filter(
+        blocker=request.user,
+    ).select_related('blocked').order_by('blocked__username')
+    return render(request, 'accounts/blocked_users.html', {'blocks': blocks})
