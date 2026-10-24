@@ -1,6 +1,6 @@
 # SocialNest
 
-SocialNest is a full-featured social networking web application built with **Django**. Users can share text, photos, and videos, follow other people, and interact through likes and comments. It also includes rich user profiles, a searchable Explore page, personalized feeds, and a notifications system.
+SocialNest is a full-featured social networking web application built with **Django**. Users can share text, photos, and videos, follow other people, and interact through likes and comments. It also includes rich user profiles, a searchable Explore page, personalized feeds, notifications, and real-time direct messaging.
 
 ---
 
@@ -29,16 +29,19 @@ SocialNest is a full-featured social networking web application built with **Dja
 - **Explore** - Browse and search all posts and people.
 - **Likes & Comments** - Like/unlike posts and add comments; counts are tracked.
 - **Follow system** - Follow/unfollow users and see follower/following counts.
+- **Block users** - Block/unblock users, remove mutual follows, and restrict profile, feed, and chat access.
 - **Notifications** - Get notified on likes, comments, and new followers; mark one or all as read.
+- **Real-time chat** - Send direct messages over WebSockets, see typing indicators and read receipts, view conversation history, and track unread messages.
 - **Search** - Search posts by text/author and people by username/name.
 
 ---
 
 ## Tech Stack
 
-- **Backend:** Django (Python)
+- **Backend:** Django (Python), Django Channels, Daphne
 - **Database:** SQLite (development)
-- **Frontend:** Django templates, custom CSS, Font Awesome icons, Google Fonts (Inter)
+- **Frontend:** Django templates, custom CSS and vanilla JavaScript, Font Awesome icons, Google Fonts (Inter)
+- **Real-time messaging:** Django Channels with an in-memory channel layer for development
 - **Media:** Local file storage for avatars, covers, and post media
 
 ---
@@ -49,6 +52,7 @@ SocialNest is a full-featured social networking web application built with **Dja
     |-- accounts/          # Auth, profiles, follow system
     |-- posts/             # Posts, comments, likes, feed, explore
     |-- notifications/     # Notification model, list, mark-read
+    |-- chat/              # Direct messages, WebSocket consumer and chat views
     |-- socialNest/        # Project settings and root URLs
     |-- static/            # CSS, JS, images (screenshots)
     |-- templates/         # HTML templates
@@ -81,7 +85,7 @@ SocialNest is a full-featured social networking web application built with **Dja
 
 3. Install dependencies:
 
-       pip install django pillow
+       python -m pip install django pillow "channels==4.3.2" "daphne==4.2.3"
 
 4. Apply migrations:
 
@@ -95,7 +99,11 @@ SocialNest is a full-featured social networking web application built with **Dja
 
        python manage.py runserver
 
+   Daphne is enabled in `INSTALLED_APPS` and provides the ASGI-capable development `runserver` command needed for WebSockets.
+
 7. Open your browser at http://127.0.0.1:8000/
+
+The development channel layer uses in-memory storage, which is appropriate for a single local server process. For a multi-process or production deployment, configure a shared channel layer such as Redis.
 
 ---
 
@@ -114,6 +122,10 @@ SocialNest is a full-featured social networking web application built with **Dja
 | /accounts/logout/ | accounts:logout | Log out (POST) |
 | /accounts/profile/ | accounts:own_profile | Your profile |
 | /accounts/profile/<username>/ | accounts:profile_detail | Another user's profile |
+| /chat/ | chat:inbox | Direct-message inbox |
+| /chat/start_chat/<user_id>/ | chat:start | Start or open a direct chat |
+| /chat/room/<room_id>/ | chat:room | Chat room |
+| /chat/room/<room_id>/history/?before=<message_id> | chat:history | Load older messages (JSON) |
 | /notifications/ | notifications:list | Notifications |
 
 ---
