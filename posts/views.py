@@ -14,6 +14,7 @@ from .forms import CommentForm, PostForm
 from .models import Comment, Follow, Like, Post
 
 
+@login_required
 def feed(request):
     query = request.GET.get('q', '').strip()
 
@@ -59,6 +60,7 @@ def feed(request):
     })
 
 
+@login_required
 def explore(request):
     query = request.GET.get('q', '').strip()
 
@@ -109,6 +111,7 @@ def post_create(request):
     return render(request, 'posts/post_form.html', {'form': form})
 
 
+@login_required
 def post_detail(request, pk):
     posts = Post.objects.select_related('author')
     if request.user.is_authenticated:

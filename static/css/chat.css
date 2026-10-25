@@ -275,6 +275,54 @@
   text-align: center;
 }
 
+html[data-theme="dark"]:not(.auth-page-shell) .chat-room,
+html[data-theme="dark"]:not(.auth-page-shell) .chat-inbox-card {
+  background: var(--white);
+  border-color: var(--gray-200);
+}
+
+html[data-theme="dark"]:not(.auth-page-shell) .chat-room__header,
+html[data-theme="dark"]:not(.auth-page-shell) .chat-inbox__item + .chat-inbox__item {
+  border-color: var(--gray-200);
+}
+
+html[data-theme="dark"]:not(.auth-page-shell) .chat-room__back,
+html[data-theme="dark"]:not(.auth-page-shell) .chat-room__heading h1,
+html[data-theme="dark"]:not(.auth-page-shell) .chat-inbox-card h1,
+html[data-theme="dark"]:not(.auth-page-shell) .chat-inbox__username {
+  color: var(--gray-900);
+}
+
+html[data-theme="dark"]:not(.auth-page-shell) .chat-room__avatar,
+html[data-theme="dark"]:not(.auth-page-shell) .chat-inbox__avatar {
+  color: #c7d2fe;
+  background: var(--indigo-soft);
+}
+
+html[data-theme="dark"]:not(.auth-page-shell) .chat-room__log {
+  background: var(--gray-50);
+}
+
+html[data-theme="dark"]:not(.auth-page-shell) .chat-room__composer {
+  background: var(--white);
+}
+
+html[data-theme="dark"]:not(.auth-page-shell) .chat-room__composer input,
+html[data-theme="dark"]:not(.auth-page-shell) .chat-message.theirs {
+  color: var(--gray-800);
+  background: var(--gray-100);
+  border-color: var(--gray-200);
+}
+
+html[data-theme="dark"]:not(.auth-page-shell) .chat-message.theirs .chat-message__sender {
+  color: #a5b4fc;
+}
+
+html[data-theme="dark"]:not(.auth-page-shell) .chat-inbox__link:hover,
+html[data-theme="dark"]:not(.auth-page-shell) .chat-inbox__link:focus-visible {
+  background: var(--gray-100);
+}
+
 @media (max-width: 600px) {
   .chat-room,
   .chat-inbox-card {

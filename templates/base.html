@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="{% if request.resolver_match.url_name == 'login' or request.resolver_match.url_name == 'register' %}auth-page-shell{% endif %}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,6 +11,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
+  {% if request.resolver_match.url_name != 'login' and request.resolver_match.url_name != 'register' %}
+  <script>
+    try {
+      if (localStorage.getItem('socialnest-theme') === 'dark') {
+        document.documentElement.dataset.theme = 'dark';
+      }
+    } catch (error) {
+      console.warn('Unable to read the saved theme preference.', error);
+    }
+  </script>
+  {% endif %}
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
@@ -45,6 +56,12 @@
         <a href="{% url 'posts:explore' %}" class="header-nav__link {% if request.resolver_match.url_name == 'explore' %}is-active{% endif %}">
           <i class="fa-regular fa-compass"></i><span>Explore</span>
         </a>
+
+        {% if request.resolver_match.url_name != 'login' and request.resolver_match.url_name != 'register' %}
+        <button type="button" class="header-icon-btn theme-toggle" aria-label="Switch to dark mode" aria-pressed="false" title="Switch to dark mode">
+          <i class="fa-solid fa-moon" aria-hidden="true"></i>
+        </button>
+        {% endif %}
 
         {% if user.is_authenticated %}
           <a href="{% url 'chat:inbox' %}" class="header-nav__link {% if 'chat' in request.path %}is-active{% endif %}">
@@ -87,6 +104,40 @@
     <p>&copy; 2024 Social Nest &bull; Help Center &bull; Privacy Policy &bull; Terms of Service</p>
   </footer>
 
+  {% if request.resolver_match.url_name != 'login' and request.resolver_match.url_name != 'register' %}
+  <script>
+    (function () {
+      var toggle = document.querySelector('.theme-toggle');
+      if (!toggle) return;
+
+      function updateToggle(isDark) {
+        toggle.setAttribute('aria-pressed', String(isDark));
+        toggle.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+        toggle.setAttribute('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+        toggle.innerHTML = isDark
+          ? '<i class="fa-solid fa-sun" aria-hidden="true"></i>'
+          : '<i class="fa-solid fa-moon" aria-hidden="true"></i>';
+      }
+
+      var isDark = document.documentElement.dataset.theme === 'dark';
+      updateToggle(isDark);
+      toggle.addEventListener('click', function () {
+        isDark = document.documentElement.dataset.theme !== 'dark';
+        if (isDark) {
+          document.documentElement.dataset.theme = 'dark';
+        } else {
+          delete document.documentElement.dataset.theme;
+        }
+        updateToggle(isDark);
+        try {
+          localStorage.setItem('socialnest-theme', isDark ? 'dark' : 'light');
+        } catch (error) {
+          console.warn('Unable to save the theme preference.', error);
+        }
+      });
+    })();
+  </script>
+  {% endif %}
   {% block extra_js %}{% endblock %}
 </body>
 </html>
