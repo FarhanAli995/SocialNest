@@ -18,9 +18,10 @@ SocialNest is a full-featured social networking web application built with **Dja
 | --- | --- |
 | ![Create Post](static/images/Screenshot_28-9-2026_22437_127.0.0.1.jpeg) | ![Notifications](static/images/Screenshot_28-9-2026_22454_127.0.0.1.jpeg) |
 
-| Chat Inbox | Real-Time Chat |
+| Inbox (`inbox.png`) | Chat (`chat.png`) |
 | --- | --- |
-| ![Chat inbox showing recent conversations and message previews](static/images/inbox.png) | ![Direct chat shown in light and dark themes](static/images/chat.png) |
+| ![SocialNest inbox with a list of direct conversations, profile initials, latest message previews, and an empty-conversation preview](static/images/inbox.png) | ![SocialNest direct-message conversation displayed in light and dark themes, with incoming and outgoing messages, timestamps, online status, and a message composer](static/images/chat.png) |
+| The inbox brings direct conversations together, showing each user's initial, username, latest message preview, and an empty state when no messages have been sent. | The chat view shows a one-to-one conversation in both light and dark themes, with distinct incoming and outgoing messages, timestamps, the participant's online status, and the message input. |
 
 ---
 
