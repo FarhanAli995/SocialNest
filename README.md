@@ -6,17 +6,20 @@ SocialNest is a full-featured social networking web application built with **Dja
 
 ## Screenshots
 
-| Feed | Explore |
+| Feed / Home (`homepage.jpeg`) | Explore (`explore_site.jpeg`) |
 | --- | --- |
-| ![Feed](static/images/Screenshot_28-9-2026_22245_127.0.0.1.jpeg) | ![Explore](static/images/Screenshot_28-9-2026_22323_127.0.0.1.jpeg) |
+| ![SocialNest home feed displaying post creation, multimedia posts with engagement options, trending topics, and active contacts](static/images/homepage.jpeg) | ![SocialNest explore page showing user search, recommended people cards, and a grid of community posts](static/images/explore_site.jpeg) |
+| The home feed allows users to share text, photos, and videos, view posts from followed accounts, engage with likes and comments, and track trending hashtags and active contacts. | The explore page helps users discover new people and trending content across the platform with search functionality and preview cards. |
 
-| Post Detail | Profile |
+| User Profile (`profile.jpeg`) | Notifications (`notiffications.jpeg`) |
 | --- | --- |
-| ![Post Detail](static/images/Screenshot_28-9-2026_22347_127.0.0.1.jpeg) | ![Profile](static/images/Screenshot_28-9-2026_2234_127.0.0.1.jpeg) |
+| ![SocialNest user profile page showing avatar, join date, follower statistics, follow button, and content tabs](static/images/profile.jpeg) | ![SocialNest notifications list displaying follow alerts with timestamps and read status controls](static/images/notiffications.jpeg) |
+| The profile page displays user avatars, bio, join date, follower and following metrics, follow/unfollow actions, and tabbed views for posts, media, and likes. | The notifications view alerts users to recent interactions such as new followers, likes, and comments, with options to mark individual or all notifications as read. |
 
-| Create Post | Notifications |
+| Login (`Login_site.jpeg`) | Registration (`registration site.jpeg`) |
 | --- | --- |
-| ![Create Post](static/images/Screenshot_28-9-2026_22437_127.0.0.1.jpeg) | ![Notifications](static/images/Screenshot_28-9-2026_22454_127.0.0.1.jpeg) |
+| ![SocialNest login portal featuring credentials form, password visibility toggle, remember me option, and quick switch to register](static/images/Login_site.jpeg) | ![SocialNest registration form with fields for full name, email, password confirmation, terms acceptance, and account creation](static/images/registration%20site.jpeg) |
+| Secure authentication interface allowing existing users to sign in with email/username and password, complete with password visibility controls and remember me options. | Onboarding page allowing new users to create an account by providing their details, setting up credentials, and agreeing to platform terms. |
 
 | Inbox (`inbox.png`) | Chat (`chat.png`) |
 | --- | --- |
