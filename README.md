@@ -18,6 +18,10 @@ SocialNest is a full-featured social networking web application built with **Dja
 | --- | --- |
 | ![Create Post](static/images/Screenshot_28-9-2026_22437_127.0.0.1.jpeg) | ![Notifications](static/images/Screenshot_28-9-2026_22454_127.0.0.1.jpeg) |
 
+| Chat Inbox | Real-Time Chat |
+| --- | --- |
+| ![Chat inbox showing recent conversations and message previews](static/images/inbox.png) | ![Direct chat shown in light and dark themes](static/images/chat.png) |
+
 ---
 
 ## Features
@@ -31,8 +35,15 @@ SocialNest is a full-featured social networking web application built with **Dja
 - **Follow system** - Follow/unfollow users and see follower/following counts.
 - **Block users** - Block/unblock users, remove mutual follows, and restrict profile, feed, and chat access.
 - **Notifications** - Get notified on likes, comments, and new followers; mark one or all as read.
-- **Real-time chat** - Send direct messages over WebSockets, see typing indicators and read receipts, view conversation history, and track unread messages.
+- **Direct messaging** - Start one-to-one conversations, view recent conversations and message previews in the inbox, and see unread message counts.
+- **Real-time chat** - Exchange messages instantly over WebSockets, with typing indicators, read receipts, saved message history, and automatic reconnection after a dropped connection.
 - **Search** - Search posts by text/author and people by username/name.
+
+## Real-Time Chat
+
+Direct messages use Django Channels and a WebSocket connection at `/ws/chat/<room_id>/`. The authenticated chat consumer checks room membership and block status, saves messages to the database, and broadcasts them to connected participants. The chat room displays recent messages and updates live; typing status and read events are also sent over the WebSocket. The inbox shows each conversation's latest message and unread count.
+
+For local development, the channel layer uses in-memory storage. This works with a single server process; configure a shared channel layer such as Redis for multi-process or production deployments.
 
 ---
 
@@ -41,7 +52,7 @@ SocialNest is a full-featured social networking web application built with **Dja
 - **Backend:** Django (Python), Django Channels, Daphne
 - **Database:** SQLite (development)
 - **Frontend:** Django templates, custom CSS and vanilla JavaScript, Font Awesome icons, Google Fonts (Inter)
-- **Real-time messaging:** Django Channels with an in-memory channel layer for development
+- **Real-time messaging:** Django Channels and Daphne, with an in-memory channel layer for development
 - **Media:** Local file storage for avatars, covers, and post media
 
 ---
