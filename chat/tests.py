@@ -4,8 +4,9 @@ from channels.testing import WebsocketCommunicator
 from accounts.models import UserBlock
 from django.contrib.auth import get_user_model
 from django.test import TestCase, TransactionTestCase
+from django.urls import reverse
 
-from .models import ChatRoom, Message
+from .models import ChatRoom, Message, MessageReaction
 from .routing import websocket_urlpatterns
 
 
@@ -142,3 +143,100 @@ class DirectRoomTests(TestCase):
             ChatRoom.objects.filter(is_group=False).count(),
             1,
         )
+
+
+class MessageReactionTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.member = user_model.objects.create_user(
+            username='reaction-member',
+            password='test-password',
+        )
+        self.other_member = user_model.objects.create_user(
+            username='reaction-other-member',
+            password='test-password',
+        )
+        self.non_member = user_model.objects.create_user(
+            username='reaction-non-member',
+            password='test-password',
+        )
+        self.room = ChatRoom.objects.create(is_group=False)
+        self.room.participants.add(self.member, self.other_member)
+        self.message = Message.objects.create(
+            room=self.room,
+            sender=self.other_member,
+            content='React to this message',
+        )
+        self.client.force_login(self.member)
+        self.url = reverse(
+            'chat:react',
+            args=[self.room.pk, self.message.pk],
+        )
+
+    def post_reaction(self, reaction):
+        return self.client.post(self.url, {'reaction': reaction})
+
+    def test_like_can_be_undone(self):
+        like_response = self.post_reaction(MessageReaction.LIKE)
+        undo_response = self.post_reaction(MessageReaction.LIKE)
+
+        self.assertEqual(like_response.status_code, 200)
+        self.assertEqual(like_response.json()['user_reaction'], 'like')
+        self.assertEqual(like_response.json()['like_count'], 1)
+        self.assertEqual(undo_response.status_code, 200)
+        self.assertIsNone(undo_response.json()['user_reaction'])
+        self.assertEqual(undo_response.json()['like_count'], 0)
+        self.assertFalse(MessageReaction.objects.filter(message=self.message).exists())
+
+    def test_reaction_can_switch_between_like_and_dislike(self):
+        self.post_reaction(MessageReaction.LIKE)
+        response = self.post_reaction(MessageReaction.DISLIKE)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['user_reaction'], 'dislike')
+        self.assertEqual(response.json()['like_count'], 0)
+        self.assertEqual(response.json()['dislike_count'], 1)
+        self.assertEqual(
+            MessageReaction.objects.filter(message=self.message).count(),
+            1,
+        )
+
+    def test_non_member_cannot_react(self):
+        self.client.force_login(self.non_member)
+
+        response = self.post_reaction(MessageReaction.LIKE)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(MessageReaction.objects.filter(message=self.message).exists())
+
+    def test_invalid_reaction_is_rejected(self):
+        response = self.post_reaction('love')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(MessageReaction.objects.filter(message=self.message).exists())
+
+    def test_room_and_history_include_reaction_state(self):
+        MessageReaction.objects.create(
+            message=self.message,
+            user=self.member,
+            reaction=MessageReaction.LIKE,
+        )
+
+        room_response = self.client.get(
+            reverse('chat:room', args=[self.room.pk]),
+        )
+        history_response = self.client.get(
+            reverse('chat:history', args=[self.room.pk]),
+            {'before': self.message.pk + 1},
+        )
+
+        self.assertEqual(room_response.status_code, 200)
+        self.assertContains(room_response, 'aria-pressed="true"')
+        self.assertContains(room_response, 'fa-solid fa-heart')
+        self.assertNotContains(room_response, 'fa-thumbs-up')
+        self.assertNotContains(room_response, 'fa-thumbs-down')
+        self.assertEqual(history_response.status_code, 200)
+        history_message = history_response.json()['messages'][0]
+        self.assertEqual(history_message['like_count'], 1)
+        self.assertEqual(history_message['dislike_count'], 0)
+        self.assertEqual(history_message['user_reaction'], 'like')

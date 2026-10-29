@@ -60,3 +60,35 @@ class Message(models.Model):
 
     def __str__(self):
         return f'Message in room {self.room_id} from {self.sender_id}'
+
+
+class MessageReaction(models.Model):
+    LIKE = 'like'
+    DISLIKE = 'dislike'
+    REACTION_CHOICES = [
+        (LIKE, 'Like'),
+        (DISLIKE, 'Dislike'),
+    ]
+
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name='reactions',
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='message_reactions',
+    )
+    reaction = models.CharField(max_length=7, choices=REACTION_CHOICES)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['message', 'user'],
+                name='chat_unique_message_reaction',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.reaction} on message {self.message_id} by {self.user_id}'

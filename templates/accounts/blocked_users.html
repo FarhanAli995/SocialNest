@@ -1,20 +1,21 @@
-{% extends 'base.html' %}
-{% block title %}Blocked users &bull; Social Nest{% endblock %}
-
-{% block content %}
+{% extends 'base.html' %} {% block title %}Blocked users &bull; Social Nest{% endblock %} {% block content %}
 <section class="card">
   <h1>Blocked users</h1>
   <ul>
     {% for block in blocks %}
-      <li>
-        {{ block.blocked.username }}
-        <form method="post" action="{% url 'accounts:block_toggle' block.blocked.username %}" class="inline-form">
-          {% csrf_token %}
-          <button type="submit" class="btn btn--outline">Unblock</button>
-        </form>
-      </li>
+    <li>
+      {{ block.blocked.username }}
+      <form
+        method="post"
+        action="{% url 'accounts:block_toggle' block.blocked.username %}"
+        class="inline-form"
+      >
+        {% csrf_token %}
+        <button type="submit" class="btn btn--outline">Unblock</button>
+      </form>
+    </li>
     {% empty %}
-      <li>You haven't blocked anyone.</li>
+    <li>You haven't blocked anyone.</li>
     {% endfor %}
   </ul>
 </section>

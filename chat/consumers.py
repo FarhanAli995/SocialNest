@@ -134,6 +134,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'read_at': event['read_at'],
         }))
 
+    async def chat_reaction(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'reaction',
+            'reaction': event['reaction'],
+        }))
+
     async def _send_error(self, message):
         await self.send(text_data=json.dumps({
             'type': 'error',

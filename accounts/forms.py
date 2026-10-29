@@ -2,6 +2,8 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
+from django.core.files.uploadedfile import UploadedFile
+
 from .models import Profile
 
 
@@ -43,13 +45,17 @@ class ProfileForm(forms.ModelForm):
 
     def clean_avatar(self):
         avatar = self.cleaned_data.get('avatar')
-        # Keep the existing/default avatar if no new file was uploaded.
-        if not avatar and self.instance.pk:
+        if isinstance(avatar, UploadedFile) and avatar.size > 10 * 1024 * 1024:
+            raise forms.ValidationError('Avatar file size cannot exceed 10 MB.')
+        # Keep the existing avatar if no new file was uploaded and clearing wasn't requested
+        if not avatar and self.instance.pk and not self.data.get('avatar-clear'):
             return self.instance.avatar
         return avatar
 
     def clean_cover_image(self):
         cover = self.cleaned_data.get('cover_image')
+        if isinstance(cover, UploadedFile) and cover.size > 10 * 1024 * 1024:
+            raise forms.ValidationError('Cover image file size cannot exceed 10 MB.')
         if not cover and self.instance.pk:
             return self.instance.cover_image
         return cover

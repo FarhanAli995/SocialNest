@@ -95,3 +95,20 @@ class FollowBackTests(TestCase):
                 blocked=self.follower,
             ).exists()
         )
+
+
+class AvatarClearTests(TestCase):
+    def test_clearing_default_avatar_preserves_default_path(self):
+        user_model = get_user_model()
+        user = user_model.objects.create_user(username='avatartest', password='password123')
+        from accounts.models import Profile
+        profile = Profile.objects.create(user=user)
+        self.client.force_login(user)
+
+        response = self.client.post('/accounts/profile/edit/', {
+            'bio': 'Updated bio',
+            'avatar-clear': '1',
+        })
+        self.assertRedirects(response, '/accounts/profile/')
+        profile.refresh_from_db()
+        self.assertEqual(profile.avatar.name, 'avatars/default.png')

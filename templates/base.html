@@ -51,7 +51,7 @@
         </a>
         <a href="{% url 'notifications:list' %}" class="header-nav__link {% if 'notifications' in request.path %}is-active{% endif %}">
           <i class="fa-regular fa-bell"></i><span>Notifications</span>
-          {% if unread_notifications_count %}<span class="badge">{{ unread_notifications_count }}</span>{% endif %}
+          {% if unread_notifications_count %}<span class="badge" id="navNotifBadge">{{ unread_notifications_count }}</span>{% else %}<span class="badge" id="navNotifBadge" style="display:none;" hidden>0</span>{% endif %}
         </a>
         <a href="{% url 'posts:explore' %}" class="header-nav__link {% if request.resolver_match.url_name == 'explore' %}is-active{% endif %}">
           <i class="fa-regular fa-compass"></i><span>Explore</span>
@@ -138,6 +138,7 @@
     })();
   </script>
   {% endif %}
+  <script src="{% static 'js/app.js' %}" defer></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

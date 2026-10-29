@@ -12,11 +12,16 @@ Nest{% endblock %} {% block extra_head %} {{ block.super }}
       <i class="fa-solid fa-arrow-left"></i>
     </a>
     <span class="chat-room__avatar" aria-hidden="true">
-      {% if other_user %}{{ other_user.username|first|upper }}{% else %}?{% endif %}
+      {% if other_user %}
+      {{ other_user.username|first|upper }}
+      {% else %}
+      ?
+      {% endif %}
     </span>
     <div class="chat-room__heading">
       <h1>
-        {% if other_user %}{{ other_user.username }}{% else %}Chat room {{ room.id }}{% endif %}
+        {% if other_user %}{{ other_user.username }}{% else %}Chat room {{
+        room.id }}{% endif %}
       </h1>
       <span id="chat-status" class="chat-room__status">Connecting...</span>
     </div>
@@ -32,12 +37,22 @@ Nest{% endblock %} {% block extra_head %} {{ block.super }}
     <div
       class="chat-message {% if m.sender_id == request.user.id %}mine{% else %}theirs{% endif %}"
       data-id="{{ m.id }}"
+      data-user-reaction="{{ m.user_reaction|default:'' }}"
+      role="button"
+      tabindex="0"
+      aria-label="Message from {{ m.sender.get_username }}. Double-click or press Enter or Space to like."
+      aria-pressed="{% if m.user_reaction == 'like' %}true{% else %}false{% endif %}"
+      title="Double-click to like or unlike"
     >
       <span class="chat-message__sender">{{ m.sender.get_username }}</span>
       <p>{{ m.content|linebreaksbr }}</p>
       <time datetime="{{ m.timestamp|date:'c' }}"
         >{{ m.timestamp|date:'H:i' }}</time
       >
+      <span class="chat-message__likes" aria-label="{{ m.like_count }} likes"{% if not m.like_count %} hidden{% endif %}>
+        <i class="fa-solid fa-heart" aria-hidden="true"></i>
+        <span data-count="like">{{ m.like_count }}</span>
+      </span>
     </div>
     {% empty %}
     <p class="chat-room__empty">No messages yet. Say hello!</p>
@@ -46,6 +61,7 @@ Nest{% endblock %} {% block extra_head %} {{ block.super }}
 
   <p id="typing-line" class="chat-room__typing" hidden></p>
   <form class="chat-room__composer" onsubmit="return false;">
+    {% csrf_token %}
     <label class="visually-hidden" for="chat-text">Message</label>
     <input
       id="chat-text"
@@ -58,6 +74,8 @@ Nest{% endblock %} {% block extra_head %} {{ block.super }}
   </form>
 </section>
 
-{{ room.id|json_script:"room-id" }} {{ request.user.id|json_script:"me-id" }} {% endblock %} {% block extra_js %} {{ block.super }}
+{{ room.id|json_script:"room-id" }} {{ request.user.id|json_script:"me-id" }}
+{% endblock %}
+{% block extra_js %} {{ block.super }}
 <script src="{% static 'js/chat.js' %}" defer></script>
 {% endblock %}

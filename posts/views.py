@@ -1,8 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.db.models import Q
-from django.http import HttpResponseRedirect
+from django.db.models import Case, F, Q, When
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
@@ -25,9 +25,9 @@ def feed(request):
         ).values_list('following_id', flat=True)
         posts = Post.objects.filter(
             Q(author=request.user) | Q(author_id__in=following_ids)
-        ).exclude(author_id__in=blocked_ids).select_related('author')
+        ).exclude(author_id__in=blocked_ids).select_related('author', 'author__profile')
     else:
-        posts = Post.objects.all().select_related('author')
+        posts = Post.objects.all().select_related('author', 'author__profile')
 
     if query:
         posts = posts.filter(
@@ -64,7 +64,7 @@ def feed(request):
 def explore(request):
     query = request.GET.get('q', '').strip()
 
-    posts = Post.objects.all().select_related('author')
+    posts = Post.objects.all().select_related('author', 'author__profile')
     people = User.objects.select_related('profile')
     if request.user.is_authenticated:
         blocked_ids = blocked_user_ids(request.user)
@@ -113,7 +113,7 @@ def post_create(request):
 
 @login_required
 def post_detail(request, pk):
-    posts = Post.objects.select_related('author')
+    posts = Post.objects.select_related('author', 'author__profile')
     if request.user.is_authenticated:
         posts = posts.exclude(author_id__in=blocked_user_ids(request.user))
     post = get_object_or_404(posts, pk=pk)
@@ -123,7 +123,7 @@ def post_detail(request, pk):
     return render(request, 'posts/post_detail.html', {
         'post': post,
         'liked': liked,
-        'comments': post.comments.select_related('author'),
+        'comments': post.comments.select_related('author', 'author__profile'),
         'comment_form': CommentForm(),
     })
 
@@ -146,7 +146,8 @@ def like_toggle(request, pk):
     post = get_object_or_404(Post, pk=pk)
     like, created = Like.objects.get_or_create(post=post, user=request.user)
     if created:
-        Post.objects.filter(pk=post.pk).update(likes_count=post.likes.count())
+        Post.objects.filter(pk=post.pk).update(likes_count=F('likes_count') + 1)
+        post.refresh_from_db(fields=['likes_count'])
         if post.author != request.user:
             Notification.objects.create(
                 recipient=post.author,
@@ -156,7 +157,21 @@ def like_toggle(request, pk):
             )
     else:
         like.delete()
-        Post.objects.filter(pk=post.pk).update(likes_count=post.likes.count())
+        Post.objects.filter(pk=post.pk).update(likes_count=Case(
+            When(likes_count__gt=0, then=F('likes_count') - 1),
+            default=0,
+        ))
+        post.refresh_from_db(fields=['likes_count'])
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', ''):
+        return JsonResponse({
+            'liked': created,
+            'likes_count': post.likes_count,
+        })
+
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return HttpResponseRedirect(referer)
     return HttpResponseRedirect(reverse('posts:post_detail', args=[pk]))
 
 
@@ -170,7 +185,7 @@ def add_comment(request, pk):
         comment.post = post
         comment.author = request.user
         comment.save()
-        Post.objects.filter(pk=post.pk).update(comments_count=post.comments.count())
+        Post.objects.filter(pk=post.pk).update(comments_count=F('comments_count') + 1)
         if post.author != request.user:
             Notification.objects.create(
                 recipient=post.author,

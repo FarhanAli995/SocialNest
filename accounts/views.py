@@ -85,12 +85,12 @@ def edit_profile(request):
         if form.is_valid():
             profile = form.save(commit=False)
 
-            # Remove the current avatar if the user asked to clear it
+            # Remove the current custom avatar if the user asked to clear it
             # and did not upload a replacement in the same request.
             if request.POST.get('avatar-clear') and not request.FILES.get('avatar'):
-                if profile.avatar:
+                if profile.avatar and profile.avatar.name and profile.avatar.name != 'avatars/default.png':
                     profile.avatar.delete(save=False)
-                profile.avatar = ''
+                profile.avatar = 'avatars/default.png'
 
             profile.save()
             messages.success(request, 'Profile updated.')
