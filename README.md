@@ -41,6 +41,8 @@ SocialNest is a full-featured social networking web application built with **Dja
 - **Notifications** - Get notified on likes, comments, and new followers; mark one or all as read.
 - **Direct messaging** - Start one-to-one conversations, view recent conversations and message previews in the inbox, and see unread message counts.
 - **Real-time chat** - Exchange messages instantly over WebSockets, with typing indicators, read receipts, saved message history, and automatic reconnection after a dropped connection.
+- **Voice messages** - Record, cancel, and send audio messages in a chat; recipients get them live and can replay them from history.
+- **Video calling** - Start a one-to-one video call from a chat, with incoming-call accept/reject, mute, camera toggle, live remote video, and a call history page.
 - **Search** - Search posts by text/author and people by username/name.
 
 ## Real-Time Chat
@@ -48,6 +50,30 @@ SocialNest is a full-featured social networking web application built with **Dja
 Direct messages use Django Channels and a WebSocket connection at `/ws/chat/<room_id>/`. The authenticated chat consumer checks room membership and block status, saves messages to the database, and broadcasts them to connected participants. The chat room displays recent messages and updates live; typing status and read events are also sent over the WebSocket. The inbox shows each conversation's latest message and unread count.
 
 For local development, the channel layer uses in-memory storage. This works with a single server process; configure a shared channel layer such as Redis for multi-process or production deployments.
+
+### Voice messages
+
+Recorded audio is uploaded over HTTP to `POST /chat/room/<room_id>/voice/` (not through the WebSocket). The server validates the MIME type and size (10 MB max), stores the file under `media/chat/voice/`, saves the message, and broadcasts it to the room group. Existing and new messages render an inline audio player.
+
+### Video calling
+
+Calls use WebRTC for media and Django Channels for signaling at `/ws/calls/<call_id>/`. Only the caller and receiver may connect, and SDP/ICE messages are relayed only to the other participant. Flow:
+
+1. `POST /chat/room/<room_id>/call/start/` creates a `Call` and notifies the room.
+2. The receiver accepts or rejects via `POST /chat/calls/<call_id>/accept|reject|end/`.
+3. Both sides exchange an SDP offer/answer and ICE candidates through the signaling socket.
+4. STUN is used by default; a TURN server can be supplied through environment variables.
+
+Call state (`ringing`, `accepted`, `rejected`, `ended`, `missed`) is stored in the database and listed at `/chat/calls/history/`. Ringing calls are expired after 45 seconds.
+
+### Configuration
+
+| Variable | Purpose |
+| --- | --- |
+| `CHANNELS_REDIS_URL` | Use Redis as the channel layer (e.g. `redis://127.0.0.1:6379`). |
+| `WEBRTC_TURN_URL` | TURN server URL for calls behind restrictive NATs. |
+| `WEBRTC_TURN_USERNAME` | TURN username. |
+| `WEBRTC_TURN_CREDENTIAL` | TURN credential. |
 
 ---
 
@@ -141,6 +167,10 @@ The development channel layer uses in-memory storage, which is appropriate for a
 | /chat/start_chat/<user_id>/ | chat:start | Start or open a direct chat |
 | /chat/room/<room_id>/ | chat:room | Chat room |
 | /chat/room/<room_id>/history/?before=<message_id> | chat:history | Load older messages (JSON) |
+| /chat/room/<room_id>/voice/ | chat:voice_upload | Upload a voice message (POST) |
+| /chat/room/<room_id>/call/start/ | chat:start_call | Start a video call (POST) |
+| /chat/calls/<call_id>/<action>/ | chat:update_call | Accept / reject / end a call (POST) |
+| /chat/calls/history/ | chat:call_history | Call history |
 | /notifications/ | notifications:list | Notifications |
 
 ---

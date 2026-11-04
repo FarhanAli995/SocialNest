@@ -6,6 +6,12 @@
   const sendButton = document.getElementById('chat-send');
   const status = document.getElementById('chat-status');
   const typingLine = document.getElementById('typing-line');
+  const voiceButton = document.getElementById('chat-voice');
+  const recorderBar = document.getElementById('voice-recorder');
+  const recorderTimer = document.getElementById('voice-recorder-timer');
+  const recorderStop = document.getElementById('voice-stop');
+  const recorderCancel = document.getElementById('voice-cancel');
+  const errorLine = document.getElementById('chat-error');
 
   if (!roomElement || !meElement || !log || !input || !sendButton || !status || !typingLine) {
     return;
@@ -144,10 +150,19 @@
     sender.textContent = typeof message.sender === 'string' ? message.sender : '';
     bubble.appendChild(sender);
 
-    const content = document.createElement('p');
-    content.textContent = typeof message.content === 'string' ? message.content : '';
-    content.style.whiteSpace = 'pre-wrap';
-    bubble.appendChild(content);
+    if (message.message_type === 'voice' && message.audio_url) {
+      const audio = document.createElement('audio');
+      audio.className = 'chat-message__audio';
+      audio.controls = true;
+      audio.preload = 'metadata';
+      audio.src = message.audio_url;
+      bubble.appendChild(audio);
+    } else {
+      const content = document.createElement('p');
+      content.textContent = typeof message.content === 'string' ? message.content : '';
+      content.style.whiteSpace = 'pre-wrap';
+      bubble.appendChild(content);
+    }
 
     const timeText = formatTime(message.timestamp);
     if (timeText) {
@@ -297,6 +312,8 @@
               : bubble.dataset.userReaction,
           });
         }
+      } else if (data.type === 'call') {
+        window.dispatchEvent(new CustomEvent('socialnest:call', { detail: data.call_event }));
       } else if (data.type === 'error') {
         setStatus(data.message || 'Unable to send message.');
       }
@@ -416,8 +433,177 @@
     toggleMessageLike(bubble);
   });
 
+  // --- Voice recording ---
+  let mediaRecorder = null;
+  let mediaStream = null;
+  let audioChunks = [];
+  let recordStartedAt = 0;
+  let recordTimerId = null;
+  let discardRecording = false;
+
+  function showChatError(text) {
+    if (!errorLine) return;
+    errorLine.textContent = text || '';
+    errorLine.hidden = !text;
+  }
+
+  function formatDuration(seconds) {
+    const total = Math.max(0, Math.round(seconds));
+    const mins = Math.floor(total / 60);
+    const secs = total % 60;
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+  }
+
+  function stopStream() {
+    if (mediaStream) {
+      mediaStream.getTracks().forEach((track) => track.stop());
+      mediaStream = null;
+    }
+    window.clearInterval(recordTimerId);
+    recordTimerId = null;
+  }
+
+  function resetRecorderUi() {
+    if (recorderBar) recorderBar.hidden = true;
+    if (voiceButton) voiceButton.setAttribute('aria-pressed', 'false');
+    if (recorderTimer) recorderTimer.textContent = '0:00';
+  }
+
+  function cancelRecording() {
+    discardRecording = true;
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+    stopStream();
+    resetRecorderUi();
+  }
+
+  async function startRecording() {
+    showChatError('');
+    if (!navigator.mediaDevices || !window.MediaRecorder) {
+      showChatError('Voice recording is not supported in this browser.');
+      return;
+    }
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (error) {
+      console.error('Microphone error:', error);
+      showChatError('Microphone access was denied or unavailable.');
+      return;
+    }
+
+    audioChunks = [];
+    discardRecording = false;
+    try {
+      mediaRecorder = new MediaRecorder(mediaStream);
+    } catch (error) {
+      console.error('Recorder init error:', error);
+      showChatError('Unable to start recording.');
+      stopStream();
+      return;
+    }
+
+    mediaRecorder.addEventListener('dataavailable', (event) => {
+      if (event.data && event.data.size > 0) {
+        audioChunks.push(event.data);
+      }
+    });
+
+    mediaRecorder.addEventListener('stop', () => {
+      stopStream();
+      resetRecorderUi();
+      if (discardRecording) {
+        discardRecording = false;
+        audioChunks = [];
+        return;
+      }
+      const elapsed = (Date.now() - recordStartedAt) / 1000;
+      const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      audioChunks = [];
+      if (blob.size === 0) {
+        showChatError('Recording was empty.');
+        return;
+      }
+      uploadVoice(blob, elapsed);
+    });
+
+    recordStartedAt = Date.now();
+    mediaRecorder.start();
+    if (recorderBar) recorderBar.hidden = false;
+    if (voiceButton) voiceButton.setAttribute('aria-pressed', 'true');
+    recordTimerId = window.setInterval(() => {
+      if (recorderTimer) {
+        recorderTimer.textContent = formatDuration((Date.now() - recordStartedAt) / 1000);
+      }
+    }, 250);
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+  }
+
+  function uploadVoice(blob, durationSeconds) {
+    const formData = new FormData();
+    formData.append('audio', blob, 'voice-message.webm');
+    formData.append('duration', String(Math.round(durationSeconds)));
+
+    const csrfInput = document.querySelector('[name="csrfmiddlewaretoken"]');
+    if (!csrfInput) {
+      showChatError('Unable to send voice message.');
+      return;
+    }
+
+    setStatus('Uploading voice message...');
+    fetch(`/chat/room/${encodeURIComponent(roomId)}/voice/`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'X-CSRFToken': csrfInput.value,
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: formData,
+    })
+      .then((response) => {
+        if (!response.ok) {
+          return response.text().then((text) => {
+            throw new Error(text || `Upload failed (${response.status}).`);
+          });
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (data && data.message) {
+          renderMessage(data.message);
+        }
+      })
+      .catch((error) => {
+        console.error('Voice upload failed:', error);
+        showChatError('Unable to send voice message.');
+      })
+      .finally(() => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          setStatus('Online');
+        }
+      });
+  }
+
+  if (voiceButton) {
+    voiceButton.addEventListener('click', () => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        cancelRecording();
+      } else {
+        startRecording();
+      }
+    });
+  }
+  if (recorderStop) recorderStop.addEventListener('click', stopRecording);
+  if (recorderCancel) recorderCancel.addEventListener('click', cancelRecording);
+
   window.addEventListener('beforeunload', () => {
     manuallyClosed = true;
+    stopStream();
     window.clearTimeout(reconnectTimer);
     if (socket) {
       socket.close();

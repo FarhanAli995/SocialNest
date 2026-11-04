@@ -9,6 +9,7 @@ from django.utils import timezone
 from accounts.models import UserBlock
 
 from .models import ChatRoom, Message
+from .views import serialize_message
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -140,6 +141,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'reaction': event['reaction'],
         }))
 
+    async def chat_call(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'call',
+            'call_event': event['call'],
+        }))
+
     async def _send_error(self, message):
         await self.send(text_data=json.dumps({
             'type': 'error',
@@ -176,13 +183,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 updated_at=timezone.now(),
             )
 
-        return {
-            'id': message.pk,
-            'sender_id': message.sender_id,
-            'sender': self.user.get_username(),
-            'content': message.content,
-            'timestamp': message.timestamp.isoformat(),
-        }
+        return serialize_message(message)
 
     @database_sync_to_async
     def _mark_other_messages_read(self):

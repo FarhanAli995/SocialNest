@@ -45,7 +45,11 @@ Nest{% endblock %} {% block extra_head %} {{ block.super }}
       title="Double-click to like or unlike"
     >
       <span class="chat-message__sender">{{ m.sender.get_username }}</span>
+      {% if m.message_type == 'voice' and m.audio_file %}
+      <audio class="chat-message__audio" controls preload="metadata" src="{{ m.audio_file.url }}"></audio>
+      {% else %}
       <p>{{ m.content|linebreaksbr }}</p>
+      {% endif %}
       <time datetime="{{ m.timestamp|date:'c' }}"
         >{{ m.timestamp|date:'H:i' }}</time
       >
@@ -60,8 +64,42 @@ Nest{% endblock %} {% block extra_head %} {{ block.super }}
   </div>
 
   <p id="typing-line" class="chat-room__typing" hidden></p>
+
+  <div id="voice-recorder" class="voice-recorder" hidden aria-live="polite">
+    <span class="voice-recorder__dot" aria-hidden="true"></span>
+    <span id="voice-recorder-timer" class="voice-recorder__timer">0:00</span>
+    <span class="voice-recorder__hint">Recording…</span>
+    <button id="voice-cancel" type="button" class="voice-recorder__btn" title="Cancel recording" aria-label="Cancel recording">
+      <i class="fa-solid fa-trash" aria-hidden="true"></i>
+    </button>
+    <button id="voice-stop" type="button" class="voice-recorder__btn voice-recorder__btn--send" title="Send voice message" aria-label="Send voice message">
+      <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <p id="chat-error" class="chat-room__error" role="alert" hidden></p>
+
   <form class="chat-room__composer" onsubmit="return false;">
     {% csrf_token %}
+    <button
+      id="chat-voice"
+      type="button"
+      class="chat-room__icon-btn"
+      title="Record a voice message"
+      aria-label="Record a voice message"
+      aria-pressed="false"
+    >
+      <i class="fa-solid fa-microphone" aria-hidden="true"></i>
+    </button>
+    <button
+      id="chat-video"
+      type="button"
+      class="chat-room__icon-btn"
+      title="Start a video call"
+      aria-label="Start a video call"
+    >
+      <i class="fa-solid fa-video" aria-hidden="true"></i>
+    </button>
     <label class="visually-hidden" for="chat-text">Message</label>
     <input
       id="chat-text"
@@ -74,8 +112,39 @@ Nest{% endblock %} {% block extra_head %} {{ block.super }}
   </form>
 </section>
 
+<div id="call-overlay" class="call-overlay" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="call-title">
+  <div class="call-overlay__panel">
+    <h2 id="call-title" class="call-overlay__title">Call</h2>
+    <p id="call-status-text" class="call-overlay__status">Connecting…</p>
+    <div class="call-overlay__videos">
+      <video id="remote-video" class="call-overlay__video call-overlay__video--remote" autoplay playsinline></video>
+      <video id="local-video" class="call-overlay__video call-overlay__video--local" autoplay playsinline muted></video>
+    </div>
+    <div class="call-overlay__controls">
+      <button id="call-mute" type="button" class="call-overlay__btn" title="Mute microphone" aria-label="Mute microphone" aria-pressed="false">
+        <i class="fa-solid fa-microphone" aria-hidden="true"></i>
+      </button>
+      <button id="call-camera" type="button" class="call-overlay__btn" title="Turn camera off" aria-label="Turn camera off" aria-pressed="false">
+        <i class="fa-solid fa-video" aria-hidden="true"></i>
+      </button>
+      <button id="call-accept" type="button" class="call-overlay__btn call-overlay__btn--accept" title="Accept call" aria-label="Accept call" hidden>
+        <i class="fa-solid fa-phone" aria-hidden="true"></i>
+      </button>
+      <button id="call-reject" type="button" class="call-overlay__btn call-overlay__btn--end" title="Reject call" aria-label="Reject call" hidden>
+        <i class="fa-solid fa-phone-slash" aria-hidden="true"></i>
+      </button>
+      <button id="call-end" type="button" class="call-overlay__btn call-overlay__btn--end" title="End call" aria-label="End call" hidden>
+        <i class="fa-solid fa-phone-slash" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
 {{ room.id|json_script:"room-id" }} {{ request.user.id|json_script:"me-id" }}
+{% if other_user %}{{ other_user.id|json_script:"other-id" }}{{ other_user.username|json_script:"other-name" }}{% endif %}
+{{ ice_servers|json_script:"ice-servers" }}
 {% endblock %}
 {% block extra_js %} {{ block.super }}
 <script src="{% static 'js/chat.js' %}" defer></script>
+<script src="{% static 'js/call.js' %}" defer></script>
 {% endblock %}

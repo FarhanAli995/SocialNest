@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import ChatRoom, Message
+from .models import Call, ChatRoom, Message
 
 
 @admin.register(ChatRoom)
@@ -13,6 +13,13 @@ class ChatRoomAdmin(admin.ModelAdmin):
 
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
-    list_display = ('id', 'room', 'sender', 'timestamp', 'is_read')
-    list_filter = ('is_read', 'timestamp')
+    list_display = ('id', 'room', 'sender', 'message_type', 'timestamp', 'is_read')
+    list_filter = ('is_read', 'message_type', 'timestamp')
     search_fields = ('content',)
+
+
+@admin.register(Call)
+class CallAdmin(admin.ModelAdmin):
+    list_display = ('id', 'caller', 'receiver', 'status', 'created_at', 'duration')
+    list_filter = ('status', 'call_type', 'created_at')
+    search_fields = ('caller__username', 'receiver__username')

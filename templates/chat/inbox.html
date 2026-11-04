@@ -3,7 +3,12 @@ Nest{% endblock %} {% block extra_head %} {{ block.super }}
 <link rel="stylesheet" href="{% static 'css/chat.css' %}" />
 {% endblock %} {% block content %}
 <section class="card chat-inbox-card" aria-labelledby="chat-inbox-heading">
-  <h1 id="chat-inbox-heading">Chats</h1>
+  <div class="chat-inbox-card__head">
+    <h1 id="chat-inbox-heading">Chats</h1>
+    <a class="chat-inbox-card__link" href="{% url 'chat:call_history' %}">
+      <i class="fa-solid fa-phone" aria-hidden="true"></i> Call history
+    </a>
+  </div>
   <ul class="chat-inbox">
     {% for c in conversations %}
     <li class="chat-inbox__item">

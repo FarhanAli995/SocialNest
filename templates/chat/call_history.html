@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Call History &bull; Social Nest{% endblock %}
+{% block extra_head %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/chat.css' %}" />
+{% endblock %}
+{% block content %}
+<section class="card chat-inbox-card" aria-labelledby="call-history-heading">
+  <h1 id="call-history-heading">Call History</h1>
+  <ul class="chat-inbox">
+    {% for call in calls %}
+    <li class="chat-inbox__item">
+      <div class="chat-inbox__link">
+        <span class="chat-inbox__avatar" aria-hidden="true">
+          {% if call.caller_id == me.id %}{{ call.receiver.username|first|upper }}{% else %}{{ call.caller.username|first|upper }}{% endif %}
+        </span>
+        <span class="chat-inbox__details">
+          <strong class="chat-inbox__username">
+            {% if call.caller_id == me.id %}Outgoing to {{ call.receiver.username }}{% else %}Incoming from {{ call.caller.username }}{% endif %}
+          </strong>
+          <span class="chat-inbox__preview">
+            {{ call.get_status_display }} &bull; {{ call.created_at|date:'M d, H:i' }}
+            {% if call.duration %}&bull; {{ call.duration }}s{% endif %}
+          </span>
+        </span>
+      </div>
+    </li>
+    {% empty %}
+    <li class="chat-inbox__empty">No calls yet.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}
