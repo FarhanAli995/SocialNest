@@ -14,6 +14,7 @@
   const acceptBtn = document.getElementById('call-accept');
   const rejectBtn = document.getElementById('call-reject');
   const endBtn = document.getElementById('call-end');
+  const diagnosticText = document.getElementById('call-diagnostic');
 
   if (!roomElement || !meElement || !otherElement || !videoButton || !overlay) {
     return;
@@ -65,6 +66,21 @@
 
   function setStatus(text) {
     if (statusText) statusText.textContent = text;
+  }
+
+  function setDiagnostic(text) {
+    if (!diagnosticText) return;
+    diagnosticText.textContent = text || '';
+    diagnosticText.hidden = !text;
+  }
+
+  function describeError(error) {
+    const name = (error && error.name) || 'Error';
+    const message = (error && error.message) || String(error);
+    const secure = window.isSecureContext ? 'secure' : 'NOT secure';
+    const origin = window.location.origin;
+    const hasDevices = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    return `${name}: ${message} | context=${secure} | origin=${origin} | mediaDevices=${hasDevices}`;
   }
 
   function showOverlay() {
@@ -131,11 +147,44 @@
     }
   }
 
+  function mediaErrorMessage(error) {
+    const name = (error && error.name) || '';
+    if (!window.isSecureContext) {
+      return 'Camera/microphone require HTTPS or localhost.';
+    }
+    if (name === 'NotAllowedError' || name === 'SecurityError') {
+      return 'Camera/microphone permission was denied.';
+    }
+    if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+      return 'No camera or microphone was found.';
+    }
+    if (name === 'NotReadableError' || name === 'AbortError') {
+      return 'Camera/microphone is in use by another app.';
+    }
+    if (name === 'TypeError') {
+      return 'Media devices are unavailable in this browser.';
+    }
+    return (error && error.message) || 'Camera or microphone unavailable.';
+  }
+
   async function getLocalMedia() {
+    if (!window.isSecureContext) {
+      throw new Error('Camera/microphone require HTTPS or localhost.');
+    }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       throw new Error('Media devices are not supported in this browser.');
     }
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    } catch (error) {
+      // Retry audio-only so a missing/busy camera still allows a call.
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        console.warn('Camera unavailable; continuing with audio only.', error);
+      } catch (fallbackError) {
+        throw new Error(mediaErrorMessage(fallbackError));
+      }
+    }
     if (localVideo) localVideo.srcObject = localStream;
     return localStream;
   }
@@ -155,10 +204,20 @@
       }
     };
 
+    pc.onnegotiationneeded = async () => {
+      if (!callActive || !pc || !pc.localDescription) return;
+      try {
+        await sendOffer();
+      } catch (e) {
+        console.warn('Renegotiation failed', e);
+      }
+    };
+
     pc.onconnectionstatechange = () => {
       const state = pc ? pc.connectionState : 'closed';
       if (state === 'connected') {
         setStatus('Connected');
+        setDiagnostic('');
       } else if (state === 'disconnected') {
         setStatus('Reconnecting…');
       } else if (state === 'failed') {
@@ -222,16 +281,17 @@
     if (!data || !data.type) return;
 
     if (data.type === 'webrtc_offer') {
-      pendingOffer = data.payload;
-      if (!pc) {
-        createPeerConnection();
+      if (!pc || !localStream) {
+        // Not ready yet (media not acquired). Remember it for after Accept.
+        pendingOffer = data.payload;
+        return;
       }
-      await pc.setRemoteDescription(new RTCSessionDescription(pendingOffer));
-      flushCandidates();
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      sendSignal('webrtc_answer', answer);
-      pendingOffer = null;
+      await applyOfferAndAnswer(data.payload);
+    } else if (data.type === 'receiver_ready') {
+      // Receiver acquired media and is ready; (re)send our offer.
+      if (isCaller && pc) {
+        await sendOffer();
+      }
     } else if (data.type === 'webrtc_answer') {
       if (pc) {
         await pc.setRemoteDescription(new RTCSessionDescription(data.payload));
@@ -270,9 +330,12 @@
 
     try {
       await getLocalMedia();
+      setDiagnostic('');
     } catch (error) {
       console.error('Media error', error);
-      endCallUi('Camera or microphone unavailable');
+      setDiagnostic(describeError(error));
+      endCallUi(mediaErrorMessage(error));
+      await postCallAction('end');
       return;
     }
 
@@ -280,12 +343,18 @@
       await openSignaling();
     } catch (error) {
       endCallUi('Could not connect signaling');
+      await postCallAction('end');
       return;
     }
 
     callActive = true;
     setButtons({ controls: true, end: true });
     createPeerConnection();
+    await sendOffer();
+  }
+
+  async function sendOffer() {
+    if (!pc) return;
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     sendSignal('webrtc_offer', offer);
@@ -342,31 +411,48 @@
       return;
     }
 
-    try {
-      await getLocalMedia();
-    } catch (error) {
-      await postCallAction('reject');
-      endCallUi('Camera or microphone unavailable');
-      return;
-    }
-
+    // Connect signaling first so the caller's offer is not missed.
     try {
       await openSignaling();
     } catch (error) {
       endCallUi('Could not connect signaling');
+      await postCallAction('reject');
+      return;
+    }
+
+    try {
+      await getLocalMedia();
+      setDiagnostic('');
+    } catch (error) {
+      console.error('Media error', error);
+      setDiagnostic(describeError(error));
+      await postCallAction('reject');
+      endCallUi(mediaErrorMessage(error));
       return;
     }
 
     callActive = true;
     setButtons({ controls: true, end: true });
     createPeerConnection();
-    flushCandidates();
+    // Ask the caller to (re)send its offer now that our tracks exist.
+    sendSignal('receiver_ready', {});
     if (pendingOffer) {
-      await pc.setRemoteDescription(new RTCSessionDescription(pendingOffer));
+      await applyOfferAndAnswer(pendingOffer);
+      pendingOffer = null;
+    }
+  }
+
+  async function applyOfferAndAnswer(offer) {
+    if (!pc) return;
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      flushCandidates();
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       sendSignal('webrtc_answer', answer);
-      pendingOffer = null;
+    } catch (error) {
+      console.error('Failed to apply offer:', error);
+      setDiagnostic('SDP Error: ' + error.message);
     }
   }
 
@@ -433,35 +519,38 @@
   if (rejectBtn) rejectBtn.addEventListener('click', rejectCall);
   if (endBtn) endBtn.addEventListener('click', hangUp);
 
-  if (muteBtn) {
-    muteBtn.addEventListener('click', () => {
-      if (!localStream) return;
-      const audioTrack = localStream.getAudioTracks()[0];
-      if (!audioTrack) return;
-      audioTrack.enabled = !audioTrack.enabled;
-      const muted = !audioTrack.enabled;
+  function toggleMute() {
+    if (!localStream) return;
+    const audioTrack = localStream.getAudioTracks()[0];
+    if (!audioTrack) return;
+    audioTrack.enabled = !audioTrack.enabled;
+    const muted = !audioTrack.enabled;
+    if (muteBtn) {
       muteBtn.setAttribute('aria-pressed', String(muted));
       muteBtn.title = muted ? 'Unmute microphone' : 'Mute microphone';
       muteBtn.innerHTML = muted
         ? '<i class="fa-solid fa-microphone-slash" aria-hidden="true"></i>'
         : '<i class="fa-solid fa-microphone" aria-hidden="true"></i>';
-    });
+    }
   }
 
-  if (cameraBtn) {
-    cameraBtn.addEventListener('click', () => {
-      if (!localStream) return;
-      const videoTrack = localStream.getVideoTracks()[0];
-      if (!videoTrack) return;
-      videoTrack.enabled = !videoTrack.enabled;
-      const off = !videoTrack.enabled;
+  function toggleCamera() {
+    if (!localStream) return;
+    const videoTrack = localStream.getVideoTracks()[0];
+    if (!videoTrack) return;
+    videoTrack.enabled = !videoTrack.enabled;
+    const off = !videoTrack.enabled;
+    if (cameraBtn) {
       cameraBtn.setAttribute('aria-pressed', String(off));
       cameraBtn.title = off ? 'Turn camera on' : 'Turn camera off';
       cameraBtn.innerHTML = off
         ? '<i class="fa-solid fa-video-slash" aria-hidden="true"></i>'
         : '<i class="fa-solid fa-video" aria-hidden="true"></i>';
-    });
+    }
   }
+
+  if (muteBtn) muteBtn.addEventListener('click', toggleMute);
+  if (cameraBtn) cameraBtn.addEventListener('click', toggleCamera);
 
   window.addEventListener('beforeunload', () => {
     if (callActive) {

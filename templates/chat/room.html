@@ -116,6 +116,7 @@ Nest{% endblock %} {% block extra_head %} {{ block.super }}
   <div class="call-overlay__panel">
     <h2 id="call-title" class="call-overlay__title">Call</h2>
     <p id="call-status-text" class="call-overlay__status">Connecting…</p>
+    <p id="call-diagnostic" class="call-overlay__diagnostic" hidden></p>
     <div class="call-overlay__videos">
       <video id="remote-video" class="call-overlay__video call-overlay__video--remote" autoplay playsinline></video>
       <video id="local-video" class="call-overlay__video call-overlay__video--local" autoplay playsinline muted></video>
@@ -145,6 +146,6 @@ Nest{% endblock %} {% block extra_head %} {{ block.super }}
 {{ ice_servers|json_script:"ice-servers" }}
 {% endblock %}
 {% block extra_js %} {{ block.super }}
-<script src="{% static 'js/chat.js' %}" defer></script>
-<script src="{% static 'js/call.js' %}" defer></script>
+<script src="{% static 'js/chat.js' %}?v=2" defer></script>
+<script src="{% static 'js/call.js' %}?v=2" defer></script>
 {% endblock %}

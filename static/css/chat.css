@@ -566,6 +566,21 @@ html[data-theme="dark"]:not(.auth-page-shell) .voice-recorder__btn {
   font-size: 13px;
 }
 
+.call-overlay__diagnostic {
+  margin: -4px 0 12px;
+  padding: 8px 10px;
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.call-overlay__diagnostic[hidden] {
+  display: none;
+}
+
 .call-overlay__videos {
   position: relative;
   aspect-ratio: 16 / 9;

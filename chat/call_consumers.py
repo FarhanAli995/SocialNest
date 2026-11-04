@@ -57,7 +57,10 @@ class CallConsumer(AsyncWebsocketConsumer):
 
         event_type = data.get('type')
         # Only relay signaling event types; never echo back to sender.
-        if event_type not in ('webrtc_offer', 'webrtc_answer', 'ice_candidate', 'call_ended'):
+        if event_type not in (
+            'webrtc_offer', 'webrtc_answer', 'ice_candidate',
+            'call_ended', 'receiver_ready',
+        ):
             return
 
         await self.channel_layer.group_send(
