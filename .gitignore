@@ -16,6 +16,11 @@ db.sqlite3
 
 # Media uploads (user-generated content)
 media/
+!media/
+media/*
+!media/avatars/
+media/avatars/*
+!media/avatars/default.png
 
 # Environment variables
 .env

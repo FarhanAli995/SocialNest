@@ -1,41 +1,59 @@
-{% extends 'base.html' %} {% load static %} {% block title %}Chats &bull; Social
-Nest{% endblock %} {% block extra_head %} {{ block.super }}
-<link rel="stylesheet" href="{% static 'css/chat.css' %}" />
-{% endblock %} {% block content %}
-<section class="card chat-inbox-card" aria-labelledby="chat-inbox-heading">
-  <div class="chat-inbox-card__head">
-    <h1 id="chat-inbox-heading">Chats</h1>
-    <a class="chat-inbox-card__link" href="{% url 'chat:call_history' %}">
-      <i class="fa-solid fa-phone" aria-hidden="true"></i> Call history
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Messages &bull; SocialNest{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-5 pb-12">
+  
+  <!-- Header Card -->
+  <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm flex items-center justify-between">
+    <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">Messages</h1>
+    <a href="{% url 'chat:call_history' %}" class="inline-flex items-center gap-2 text-xs font-bold text-brand bg-indigo-50 hover:bg-brand hover:text-white px-4 py-2 rounded-full transition">
+      <i class="fa-solid fa-phone text-xs"></i> Call History
     </a>
   </div>
-  <ul class="chat-inbox">
+
+  <!-- Conversations List -->
+  <div class="bg-white rounded-3xl border border-slate-100 p-3 sm:p-4 shadow-sm divide-y divide-slate-100">
     {% for c in conversations %}
-    <li class="chat-inbox__item">
-      <a class="chat-inbox__link" href="{% url 'chat:room' c.room.id %}">
-        <span class="chat-inbox__avatar" aria-hidden="true"
-          >{{ c.other.username|first|upper }}</span>
-        <span class="chat-inbox__details">
-          <strong class="chat-inbox__username">{{ c.other.username }}</strong>
-          <span class="chat-inbox__preview">
-            {% if c.last %}{{ c.last.content|truncatechars:45 }}{% else %}No
-            messages yet.{% endif %}
-          </span>
-        </span>
+      <a href="{% url 'chat:room' c.room.id %}" class="flex items-center justify-between gap-4 p-3.5 rounded-2xl hover:bg-slate-50 transition group">
+        
+        <div class="flex items-center gap-3.5 min-w-0">
+          <div class="w-12 h-12 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-sm shrink-0 ring-2 ring-indigo-50">
+            {% if c.other.profile.avatar %}
+              <img src="{{ c.other.profile.avatar.url }}" alt="{{ c.other.username }}" class="w-full h-full object-cover">
+            {% else %}
+              {{ c.other.username|first|upper }}
+            {% endif %}
+          </div>
+
+          <div class="min-w-0">
+            <div class="font-bold text-slate-900 text-sm group-hover:text-brand transition truncate">
+              {{ c.other.get_full_name|default:c.other.username }}
+            </div>
+            <p class="text-xs text-slate-500 truncate mt-0.5">
+              {% if c.last %}{{ c.last.content }}{% else %}No messages yet. Say hello!{% endif %}
+            </p>
+          </div>
+        </div>
+
         {% if c.unread > 0 %}
-        <span
-          class="chat-inbox__unread"
-          aria-label="{{ c.unread }} unread messages"
-          >{{ c.unread }}</span
-        >
+          <span class="bg-brand text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 grid place-items-center px-1.5 shadow-xs">
+            {{ c.unread }}
+          </span>
         {% endif %}
+
       </a>
-    </li>
     {% empty %}
-    <li class="chat-inbox__empty">
-      No conversations yet. Start a chat to see it here.
-    </li>
+      <div class="p-12 text-center text-slate-400">
+        <div class="w-14 h-14 rounded-full bg-slate-100 text-slate-400 grid place-items-center text-xl mx-auto mb-3">
+          <i class="fa-regular fa-comment-dots"></i>
+        </div>
+        <p class="text-sm font-semibold text-slate-700">No conversations yet</p>
+        <p class="text-xs text-slate-400 mt-1">Start a conversation from a user's profile to see it here.</p>
+      </div>
     {% endfor %}
-  </ul>
-</section>
+  </div>
+
+</div>
 {% endblock %}

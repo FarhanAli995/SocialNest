@@ -85,20 +85,41 @@
 
   function showOverlay() {
     overlay.hidden = false;
+    overlay.classList.remove('hidden');
     overlay.setAttribute('aria-hidden', 'false');
+    overlay.style.display = 'flex';
   }
 
   function hideOverlay() {
     overlay.hidden = true;
+    overlay.classList.add('hidden');
     overlay.setAttribute('aria-hidden', 'true');
+    overlay.style.display = 'none';
   }
 
   function setButtons({ accept = false, reject = false, end = false, controls = true }) {
-    if (acceptBtn) acceptBtn.hidden = !accept;
-    if (rejectBtn) rejectBtn.hidden = !reject;
-    if (endBtn) endBtn.hidden = !end;
-    if (muteBtn) muteBtn.hidden = !controls;
-    if (cameraBtn) cameraBtn.hidden = !controls;
+    if (acceptBtn) {
+      acceptBtn.hidden = !accept;
+      acceptBtn.style.display = accept ? 'grid' : 'none';
+    }
+    if (rejectBtn) {
+      rejectBtn.hidden = true;
+      rejectBtn.style.display = 'none';
+    }
+    if (endBtn) {
+      const shouldShowEnd = end || reject;
+      endBtn.hidden = !shouldShowEnd;
+      endBtn.style.display = shouldShowEnd ? 'grid' : 'none';
+      endBtn.title = (reject && !end) ? 'Decline Call' : 'End Call';
+    }
+    if (muteBtn) {
+      muteBtn.hidden = !controls;
+      muteBtn.style.display = controls ? 'grid' : 'none';
+    }
+    if (cameraBtn) {
+      cameraBtn.hidden = !controls;
+      cameraBtn.style.display = controls ? 'grid' : 'none';
+    }
   }
 
   function cleanupPeer() {
@@ -115,6 +136,8 @@
     }
     if (localVideo) localVideo.srcObject = null;
     if (remoteVideo) remoteVideo.srcObject = null;
+    const pipWrap = document.getElementById('local-video-wrap');
+    if (pipWrap) pipWrap.style.display = '';
   }
 
   function cleanupAll() {
@@ -174,17 +197,35 @@
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       throw new Error('Media devices are not supported in this browser.');
     }
+    
+    // Explicitly check what devices exist to give a better error
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const hasVideo = devices.some(d => d.kind === 'videoinput');
+      const hasAudio = devices.some(d => d.kind === 'audioinput');
+      if (!hasVideo && !hasAudio) {
+        throw new Error('No camera or microphone found on this device.');
+      }
+    } catch (e) {
+      console.warn('Could not enumerate devices:', e);
+    }
+
     try {
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
     } catch (error) {
-      // Retry audio-only so a missing/busy camera still allows a call.
+      console.warn('Full AV failed, trying audio-only', error);
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        console.warn('Camera unavailable; continuing with audio only.', error);
       } catch (fallbackError) {
-        throw new Error(mediaErrorMessage(fallbackError));
+        console.warn('Audio-only failed, trying video-only', fallbackError);
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+        } catch (videoError) {
+          throw new Error(mediaErrorMessage(videoError));
+        }
       }
     }
+    
     if (localVideo) localVideo.srcObject = localStream;
     return localStream;
   }
@@ -201,17 +242,14 @@
     pc.ontrack = (event) => {
       if (remoteVideo && event.streams && event.streams[0]) {
         remoteVideo.srcObject = event.streams[0];
+        remoteVideo.muted = false;
+        const pipWrap = document.getElementById('local-video-wrap');
+        if (pipWrap) pipWrap.style.display = 'block';
       }
     };
 
-    pc.onnegotiationneeded = async () => {
-      if (!callActive || !pc || !pc.localDescription) return;
-      try {
-        await sendOffer();
-      } catch (e) {
-        console.warn('Renegotiation failed', e);
-      }
-    };
+    // NOTE: onnegotiationneeded is intentionally omitted to prevent SDP glare.
+    // Tracks are added before the first offer is created, so renegotiation is not needed.
 
     pc.onconnectionstatechange = () => {
       const state = pc ? pc.connectionState : 'closed';
@@ -338,6 +376,14 @@
       await postCallAction('end');
       return;
     }
+
+    // Immediately display user camera feed full screen while calling
+    if (remoteVideo) {
+      remoteVideo.srcObject = localStream;
+      remoteVideo.muted = true;
+    }
+    const pipWrap = document.getElementById('local-video-wrap');
+    if (pipWrap) pipWrap.style.display = 'none';
 
     try {
       await openSignaling();
@@ -517,7 +563,15 @@
   if (videoButton) videoButton.addEventListener('click', initiateCall);
   if (acceptBtn) acceptBtn.addEventListener('click', acceptCall);
   if (rejectBtn) rejectBtn.addEventListener('click', rejectCall);
-  if (endBtn) endBtn.addEventListener('click', hangUp);
+  if (endBtn) {
+    endBtn.addEventListener('click', async () => {
+      if (!isCaller && !callActive) {
+        await rejectCall();
+      } else {
+        await hangUp();
+      }
+    });
+  }
 
   function toggleMute() {
     if (!localStream) return;

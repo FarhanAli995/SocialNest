@@ -393,6 +393,15 @@ button {
   color: var(--indigo);
   font-size: 16px;
 }
+.composer__action--story {
+  text-decoration: none;
+  cursor: pointer;
+}
+.composer__action--story:hover,
+.composer__action--story:focus-visible {
+  color: var(--indigo);
+  text-decoration: none;
+}
 .composer__submit {
   margin-left: auto;
 }

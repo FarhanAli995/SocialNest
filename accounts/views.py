@@ -161,3 +161,40 @@ def blocked_users(request):
         blocker=request.user,
     ).select_related('blocked').order_by('blocked__username')
     return render(request, 'accounts/blocked_users.html', {'blocks': blocks})
+
+
+@login_required
+def friends_view(request):
+    following_ids = request.user.following.values_list('following_id', flat=True)
+    followers = request.user.followers.select_related('follower__profile').all()
+    following = request.user.following.select_related('following__profile').all()
+    suggestions = User.objects.exclude(id=request.user.id).exclude(id__in=following_ids)[:10]
+    return render(request, 'accounts/friends.html', {
+        'followers': followers,
+        'following': following,
+        'suggestions': suggestions,
+    })
+
+
+@login_required
+def settings_view(request):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    if request.method == 'POST':
+        full_name = request.POST.get('full_name', '').strip()
+        email = request.POST.get('email', '').strip()
+        if full_name:
+            parts = full_name.split(' ', 1)
+            request.user.first_name = parts[0]
+            request.user.last_name = parts[1] if len(parts) > 1 else ''
+        if email:
+            request.user.email = email
+        request.user.save()
+
+        # Handle avatar if uploaded
+        if 'avatar' in request.FILES:
+            profile.avatar = request.FILES['avatar']
+            profile.save()
+
+        messages.success(request, 'Settings saved successfully.')
+        return redirect('accounts:settings')
+    return render(request, 'accounts/settings.html', {'profile': profile})

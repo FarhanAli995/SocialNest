@@ -535,15 +535,24 @@ html[data-theme="dark"]:not(.auth-page-shell) .voice-recorder__btn {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: rgba(17, 24, 39, 0.72);
-  backdrop-filter: blur(4px);
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: #000000 !important;
+  display: flex;
+  flex-direction: column;
 }
 
-.call-overlay[hidden] {
-  display: none;
+.call-overlay[hidden],
+.call-overlay.hidden,
+#call-overlay[hidden],
+#call-overlay.hidden {
+  display: none !important;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 .call-overlay__panel {
@@ -729,4 +738,24 @@ html[data-theme="dark"]:not(.auth-page-shell) .chat-inbox__link:focus-visible {
     animation: none;
     opacity: 1;
   }
+}
+
+
+/* Mockup Screens 12 & 13 Polish */
+.chat-message.mine {
+  background: #4F46E5 !important;
+  color: #ffffff !important;
+  border-radius: 18px 18px 4px 18px !important;
+}
+.chat-message.theirs {
+  background: #F1F5F9 !important;
+  color: #1E293B !important;
+  border-radius: 18px 18px 18px 4px !important;
+}
+.chat-message.theirs .chat-message__sender {
+  color: #4F46E5 !important;
+}
+#call-overlay:not([hidden]):not(.hidden) {
+  display: flex !important;
+  background: #000000 !important;
 }

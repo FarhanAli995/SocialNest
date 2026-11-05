@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}New Story &bull; Social Nest{% endblock %}
+{% block extra_head %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/stories.css' %}" />
+{% endblock %}
+{% block content %}
+<section class="card story-form-card">
+  <h1 class="story-form-card__title">Add to your story</h1>
+  <p class="story-form-card__hint">Stories disappear automatically after 24 hours.</p>
+
+  <form method="post" enctype="multipart/form-data" class="story-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="story-form__errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="story-form__field">
+      <label for="{{ form.image.id_for_label }}">Photo</label>
+      {{ form.image }}
+      {{ form.image.errors }}
+    </div>
+
+    <div class="story-form__field">
+      <label for="{{ form.video.id_for_label }}">Video</label>
+      {{ form.video }}
+      {{ form.video.errors }}
+    </div>
+
+    <div class="story-form__field">
+      <label for="{{ form.caption.id_for_label }}">Caption</label>
+      {{ form.caption }}
+      {{ form.caption.errors }}
+    </div>
+
+    <div class="story-form__actions">
+      <a href="{% url 'posts:feed' %}" class="story-form__cancel">Cancel</a>
+      <button type="submit" class="story-form__submit">Share to story</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

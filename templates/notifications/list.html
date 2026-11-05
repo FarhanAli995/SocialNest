@@ -1,49 +1,83 @@
 {% extends 'base.html' %}
-{% block title %}Notifications &bull; Social Nest{% endblock %}
+{% load static %}
+{% block title %}Notifications &bull; SocialNest{% endblock %}
 
 {% block content %}
-<div style="max-width:680px;margin:0 auto;">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-    <h1 class="section-title" style="margin-bottom:0;">Notifications</h1>
+<div class="max-w-2xl mx-auto space-y-4 pb-12">
+  
+  <!-- Header Card (Mockup Screen 11) -->
+  <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm flex items-center justify-between">
+    <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">Notifications</h1>
     {% if unread_count %}
       <form method="post" action="{% url 'notifications:mark_all_read' %}">
         {% csrf_token %}
-        <button type="submit" class="btn btn--outline btn--sm"><i class="fa-regular fa-envelope-open"></i> Mark all read</button>
+        <button type="submit" class="text-xs font-semibold text-brand hover:underline">
+          Mark all as read
+        </button>
       </form>
     {% endif %}
   </div>
 
-  <div class="card" style="overflow:hidden;">
+  <!-- Notification Rows Card (Mockup Screen 11) -->
+  <div class="bg-white rounded-3xl border border-slate-100 p-3 sm:p-4 shadow-sm divide-y divide-slate-100">
     {% for n in notifications %}
-      <div class="notif {% if not n.is_read %}is-unread{% endif %}">
-        <span class="notif__icon notif__icon--{{ n.notif_type }}">
-          {% if n.notif_type == 'like' %}<i class="fa-solid fa-heart"></i>
-          {% elif n.notif_type == 'comment' %}<i class="fa-solid fa-comment"></i>
-          {% else %}<i class="fa-solid fa-user-plus"></i>{% endif %}
-        </span>
-        <div style="flex:1;">
-          <div class="notif__text">
-            <strong>{{ n.sender.username }}</strong>
-            {% if n.notif_type == 'like' %} liked your post.
-            {% elif n.notif_type == 'comment' %} commented on your post.
-            {% else %} started following you.{% endif %}
-            {% if n.post %} <a href="{% url 'posts:post_detail' n.post.pk %}" class="link">View post</a>{% endif %}
+      <div class="flex items-center justify-between gap-3 p-3.5 rounded-2xl transition {% if not n.is_read %}bg-indigo-50/40{% else %}hover:bg-slate-50{% endif %}">
+        
+        <div class="flex items-center gap-3.5 min-w-0">
+          <!-- Actor Avatar -->
+          <a href="{% url 'accounts:profile_detail' n.sender.username %}" class="w-11 h-11 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-xs shrink-0 ring-2 ring-indigo-50">
+            {% if n.sender.profile.avatar %}
+              <img src="{{ n.sender.profile.avatar.url }}" alt="{{ n.sender.username }}" class="w-full h-full object-cover">
+            {% else %}
+              {{ n.sender.username|first|upper }}
+            {% endif %}
+          </a>
+
+          <!-- Notification Text -->
+          <div class="min-w-0 text-xs sm:text-sm text-slate-700 leading-snug">
+            <a href="{% url 'accounts:profile_detail' n.sender.username %}" class="font-bold text-slate-900 hover:underline">
+              {{ n.sender.get_full_name|default:n.sender.username }}
+            </a>
+            {% if n.notif_type == 'like' %}
+              liked your post.
+            {% elif n.notif_type == 'comment' %}
+              commented on your post.
+            {% elif n.notif_type == 'follow' %}
+              started following you.
+            {% else %}
+              sent you a notification.
+            {% endif %}
+
+            {% if n.post %}
+              <a href="{% url 'posts:post_detail' n.post.pk %}" class="text-brand font-semibold hover:underline ml-1">
+                View post
+              </a>
+            {% endif %}
           </div>
-          <div class="notif__time">{{ n.created_at|timesince }} ago</div>
         </div>
-        {% if not n.is_read %}
-          <form method="post" action="{% url 'notifications:mark_read' n.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn--ghost btn--sm">Mark read</button>
-          </form>
-        {% endif %}
+
+        <!-- Timestamp on Right -->
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="text-[11px] text-slate-400 font-medium whitespace-nowrap">{{ n.created_at|timesince }} ago</span>
+          {% if not n.is_read %}
+            <form method="post" action="{% url 'notifications:mark_read' n.pk %}" class="inline">
+              {% csrf_token %}
+              <button type="submit" title="Mark read" class="w-2.5 h-2.5 rounded-full bg-brand ring-2 ring-indigo-200"></button>
+            </form>
+          {% endif %}
+        </div>
+
       </div>
     {% empty %}
-      <div class="empty">
-        <i class="fa-regular fa-bell"></i>
-        <p>No notifications yet.</p>
+      <div class="p-12 text-center text-slate-400">
+        <div class="w-14 h-14 rounded-full bg-slate-100 text-slate-400 grid place-items-center text-xl mx-auto mb-3">
+          <i class="fa-regular fa-bell"></i>
+        </div>
+        <p class="text-sm font-semibold text-slate-700">No notifications</p>
+        <p class="text-xs text-slate-400 mt-1">You're all caught up!</p>
       </div>
     {% endfor %}
   </div>
+
 </div>
 {% endblock %}

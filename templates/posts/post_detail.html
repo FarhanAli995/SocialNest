@@ -1,99 +1,164 @@
 {% extends 'base.html' %}
-{% block title %}Post Detail &bull; Social Nest{% endblock %}
+{% load static %}
+{% block title %}Post by {{ post.author.username }} &bull; SocialNest{% endblock %}
 
 {% block content %}
-<div class="detail-layout">
-  <div>
-    <article class="card post-card">
-      <div class="post-card__head">
-        <a href="{% url 'accounts:profile_detail' post.author.username %}" class="avatar">
+<div class="max-w-2xl mx-auto space-y-6 pb-12">
+  
+  <!-- Post Card (Mockup Screen 8) -->
+  <article class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+    
+    <!-- Post Header -->
+    <div class="flex items-center justify-between p-4 sm:p-5 pb-3">
+      <div class="flex items-center gap-3">
+        <a href="{% url 'accounts:profile_detail' post.author.username %}" class="w-10 h-10 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-sm ring-2 ring-indigo-50">
           {% if post.author.profile.avatar %}
-            <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}">
+            <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}" class="w-full h-full object-cover">
           {% else %}
-            <span class="avatar-fallback">{{ post.author.username|first|upper }}</span>
+            {{ post.author.username|first|upper }}
           {% endif %}
         </a>
-        <div class="post-card__meta">
-          <a href="{% url 'accounts:profile_detail' post.author.username %}" class="post-card__author">{{ post.author.username }}</a>
-          <div class="post-card__time">{{ post.created_at|timesince }} ago</div>
+        <div>
+          <a href="{% url 'accounts:profile_detail' post.author.username %}" class="font-bold text-slate-900 text-sm hover:underline block leading-tight">
+            {{ post.author.get_full_name|default:post.author.username }}
+          </a>
+          <span class="text-xs text-slate-400">{{ post.created_at|timesince }} ago</span>
         </div>
+      </div>
+
+      <div class="flex items-center gap-1">
         {% if post.author == user %}
           <form method="post" action="{% url 'posts:post_delete' post.pk %}" onsubmit="return confirm('Delete this post?');">
             {% csrf_token %}
-            <button type="submit" class="menu-dot" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
+            <button type="submit" class="w-8 h-8 grid place-items-center rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition" title="Delete">
+              <i class="fa-regular fa-trash-can text-sm"></i>
+            </button>
           </form>
         {% else %}
-          <button class="menu-dot" type="button"><i class="fa-solid fa-ellipsis"></i></button>
+          <button type="button" class="w-8 h-8 grid place-items-center rounded-full hover:bg-slate-100 text-slate-400 transition">
+            <i class="fa-solid fa-ellipsis"></i>
+          </button>
         {% endif %}
       </div>
+    </div>
 
-      {% if post.text %}<div class="post-card__body">{{ post.text|linebreaksbr }}</div>{% endif %}
-      {% if post.image %}
-        <div class="post-card__media"><img src="{{ post.image.url }}" alt="Post image"></div>
-      {% elif post.video %}
-        <div class="post-card__media"><video controls src="{{ post.video.url }}"></video></div>
-      {% endif %}
+    <!-- Post Text -->
+    {% if post.text %}
+      <div class="px-5 pb-3 text-sm text-slate-800 leading-relaxed font-normal">
+        {{ post.text|linebreaksbr }}
+      </div>
+    {% endif %}
 
-      <div class="post-card__actions">
-        <form method="post" action="{% url 'posts:like_toggle' post.pk %}" class="inline-form">
-          {% csrf_token %}
-          <button type="submit" class="post-action {% if liked %}is-liked{% endif %}">
-            {% if liked %}<i class="fa-solid fa-heart"></i>{% else %}<i class="fa-regular fa-heart"></i>{% endif %}
-            <span>{{ post.likes_count }} likes</span>
-          </button>
-        </form>
-        <span class="post-action"><i class="fa-regular fa-comment"></i> <span>{{ post.comments_count }}</span></span>
-        <button type="button" class="post-action js-share" data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'posts:post_detail' post.pk %}">
-          <i class="fa-solid fa-share-nodes"></i>
+    <!-- Post Media -->
+    {% if post.image %}
+      <div class="bg-slate-100 overflow-hidden relative group">
+        <img src="{{ post.image.url }}" alt="Post image" class="w-full max-h-[580px] object-cover cursor-pointer lightbox-media hover:opacity-98 transition">
+        <button type="button" class="js-lightbox-btn absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 hover:bg-black/75 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition shadow-lg z-10" data-media="{{ post.image.url }}" data-type="image" title="Open in full screen">
+          <i class="fa-solid fa-expand text-xs"></i>
         </button>
       </div>
-    </article>
-  </div>
-
-  <aside class="card comments">
-    <div class="comments__title">Comments &middot; {{ post.comments_count }}</div>
-
-    {% for comment in comments %}
-      <div class="comment">
-        <a href="{% url 'accounts:profile_detail' comment.author.username %}" class="avatar avatar--sm">
-          {% if comment.author.profile.avatar %}
-            <img src="{{ comment.author.profile.avatar.url }}" alt="{{ comment.author.username }}">
-          {% else %}
-            <span class="avatar-fallback">{{ comment.author.username|first|upper }}</span>
-          {% endif %}
-        </a>
-        <div class="comment__body">
-          <div class="comment__head">
-            <a href="{% url 'accounts:profile_detail' comment.author.username %}" class="comment__author">{{ comment.author.username }}</a>
-            <span class="comment__time">{{ comment.created_at|timesince }} ago</span>
-          </div>
-          <div class="comment__text">{{ comment.text }}</div>
-        </div>
+    {% elif post.video %}
+      <div class="bg-black overflow-hidden relative group">
+        <video controls src="{{ post.video.url }}" class="w-full max-h-[580px] lightbox-media"></video>
+        <button type="button" class="js-lightbox-btn absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 hover:bg-black/75 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition shadow-lg z-10" data-media="{{ post.video.url }}" data-type="video" title="Open in full screen">
+          <i class="fa-solid fa-expand text-xs"></i>
+        </button>
       </div>
-    {% empty %}
-      <p class="comment__text" style="padding:12px 0;">No comments yet. Start the conversation!</p>
-    {% endfor %}
-
-    {% if user.is_authenticated %}
-    <form class="comment-form" method="post" action="{% url 'posts:add_comment' post.pk %}">
-      {% csrf_token %}
-      <input type="text" name="text" placeholder="Add a comment..." maxlength="500" required>
-      <button type="submit" title="Send"><i class="fa-regular fa-paper-plane"></i></button>
-    </form>
     {% endif %}
-  </aside>
-</div>
-{% endblock %}
 
-{% block extra_js %}
+    <!-- Reactions Bar (Mockup Screen 8: Like 124, Comment 32, Share) -->
+    <div class="flex items-center justify-between px-5 py-3 border-t border-slate-100 text-slate-500 text-sm">
+      <form method="post" action="{% url 'posts:like_toggle' post.pk %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition {% if liked %}text-rose-500 bg-rose-50{% else %}hover:bg-slate-50 text-slate-600{% endif %}">
+          {% if liked %}
+            <i class="fa-solid fa-heart text-base"></i>
+          {% else %}
+            <i class="fa-regular fa-heart text-base"></i>
+          {% endif %}
+          <span class="text-xs font-semibold">Like {{ post.likes_count }}</span>
+        </button>
+      </form>
+
+      <div class="flex items-center gap-2 px-3 py-1.5 text-slate-600 font-medium">
+        <i class="fa-regular fa-comment text-base"></i>
+        <span class="text-xs font-semibold">Comment {{ post.comments_count }}</span>
+      </div>
+
+      <button type="button" class="js-share flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-slate-600 hover:bg-slate-50 transition" data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'posts:post_detail' post.pk %}">
+        <i class="fa-solid fa-share-nodes text-base"></i>
+        <span class="text-xs font-semibold">Share</span>
+      </button>
+    </div>
+
+    <!-- Comments Section (Mockup Screen 8) -->
+    <div class="border-t border-slate-100 bg-slate-50/50 p-5 space-y-4">
+      <div class="text-xs font-bold text-slate-700 tracking-wide">
+        View all comments ({{ comments|length }})
+      </div>
+
+      <!-- Comment Items -->
+      <div class="space-y-3.5">
+        {% for comment in comments %}
+          <div class="flex items-start gap-3">
+            <a href="{% url 'accounts:profile_detail' comment.author.username %}" class="w-8 h-8 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-xs shrink-0 mt-0.5">
+              {% if comment.author.profile.avatar %}
+                <img src="{{ comment.author.profile.avatar.url }}" alt="{{ comment.author.username }}" class="w-full h-full object-cover">
+              {% else %}
+                {{ comment.author.username|first|upper }}
+              {% endif %}
+            </a>
+            <div class="flex-1 min-w-0 bg-white rounded-2xl p-3 border border-slate-100 shadow-2xs">
+              <div class="flex items-center justify-between gap-2 mb-1">
+                <a href="{% url 'accounts:profile_detail' comment.author.username %}" class="text-xs font-bold text-slate-900 hover:underline">
+                  {{ comment.author.get_full_name|default:comment.author.username }}
+                </a>
+                <span class="text-[10px] text-slate-400">{{ comment.created_at|timesince }} ago</span>
+              </div>
+              <p class="text-xs text-slate-700 leading-relaxed font-normal">{{ comment.text }}</p>
+            </div>
+          </div>
+        {% empty %}
+          <p class="text-xs text-slate-400 text-center py-4">No comments yet. Start the conversation!</p>
+        {% endfor %}
+      </div>
+
+      <!-- Pinned Comment Composer Box (Mockup Screen 8) -->
+      {% if user.is_authenticated %}
+        <form method="post" action="{% url 'posts:add_comment' post.pk %}" class="flex items-center gap-2 pt-2">
+          {% csrf_token %}
+          <div class="w-8 h-8 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-xs shrink-0">
+            {% if user.profile.avatar %}
+              <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="w-full h-full object-cover">
+            {% else %}
+              {{ user.username|first|upper }}
+            {% endif %}
+          </div>
+          <div class="flex-1 relative flex items-center">
+            <input type="text" name="text" placeholder="Write a comment..." maxlength="500" required
+              class="w-full bg-white rounded-full pl-4 pr-10 py-2 text-xs border border-slate-200 outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition">
+            <button type="submit" class="absolute right-2.5 w-6 h-6 rounded-full bg-brand text-white grid place-items-center text-[10px] hover:bg-brand-dark transition shadow-xs">
+              <i class="fa-solid fa-arrow-up"></i>
+            </button>
+          </div>
+        </form>
+      {% endif %}
+
+    </div>
+
+  </article>
+</div>
+
 <script>
-  var shareBtn = document.querySelector('.js-share');
-  if (shareBtn) {
-    shareBtn.addEventListener('click', function () {
-      var url = shareBtn.dataset.url;
-      if (navigator.share) { navigator.share({ url: url }).catch(function () {}); }
-      else { navigator.clipboard.writeText(url); }
+  document.querySelectorAll('.js-share').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var url = btn.dataset.url;
+      if (navigator.share) navigator.share({ url: url }).catch(function(){});
+      else {
+        navigator.clipboard.writeText(url);
+        alert('Post link copied to clipboard!');
+      }
     });
-  }
+  });
 </script>
 {% endblock %}

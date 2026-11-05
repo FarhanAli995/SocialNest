@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ author.username }}'s Story &bull; Social Nest{% endblock %}
+{% block extra_head %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/stories.css' %}" />
+{% endblock %}
+{% block content %}
+<div class="story-viewer" id="story-viewer"
+     data-author-id="{{ author.pk }}"
+     data-is-own="{% if is_own %}true{% else %}false{% endif %}">
+
+  <div class="story-viewer__bars">
+    {% for story in stories %}<span class="story-viewer__bar"><span class="story-viewer__fill"></span></span>{% endfor %}
+  </div>
+
+  <header class="story-viewer__header">
+    <span class="story-viewer__avatar">
+      {% if author.profile.avatar %}<img src="{{ author.profile.avatar.url }}" alt="{{ author.username }}">{% else %}{{ author.username|first|upper }}{% endif %}
+    </span>
+    <a class="story-viewer__author" href="{% url 'accounts:profile_detail' author.username %}">{{ author.username }}</a>
+    <span class="story-viewer__time">{{ stories.0.created_at|timesince }} ago</span>
+    <a class="story-viewer__close" href="{% url 'posts:feed' %}" aria-label="Close stories"><i class="fa-solid fa-xmark"></i></a>
+  </header>
+
+  <div class="story-viewer__stage">
+    {% for story in stories %}
+    <div class="story-slide{% if forloop.first %} is-active{% endif %}" data-index="{{ forloop.counter0 }}" data-story-id="{{ story.pk }}">
+      {% if story.video %}
+        <video class="story-slide__media" src="{{ story.video.url }}" playsinline></video>
+      {% else %}
+        <img class="story-slide__media" src="{{ story.image.url }}" alt="Story by {{ author.username }}">
+      {% endif %}
+      {% if story.caption %}<p class="story-slide__caption">{{ story.caption }}</p>{% endif %}
+      {% if is_own %}
+        <div class="story-slide__own-actions">
+          <a class="story-slide__viewers" href="{% url 'stories:viewers' story.pk %}"><i class="fa-regular fa-eye"></i> Viewers</a>
+          <form method="post" action="{% url 'stories:delete' story.pk %}">{% csrf_token %}<button type="submit" class="story-slide__delete"><i class="fa-solid fa-trash"></i></button></form>
+        </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <button type="button" class="story-viewer__nav story-viewer__nav--prev" id="story-prev" aria-label="Previous story"><i class="fa-solid fa-chevron-left"></i></button>
+  <button type="button" class="story-viewer__nav story-viewer__nav--next" id="story-next" aria-label="Next story"><i class="fa-solid fa-chevron-right"></i></button>
+</div>
+
+{{ stories|length|json_script:"story-count" }}
+<form class="visually-hidden" aria-hidden="true">{% csrf_token %}</form>
+{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/stories.js' %}" defer></script>
+{% endblock %}

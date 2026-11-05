@@ -14,4 +14,6 @@ urlpatterns = [
     path('profile/<str:username>/follow/', views.follow_toggle, name='follow_toggle'),
     path('profile/<str:username>/block/', views.block_toggle, name='block_toggle'),
     path('blocked/', views.blocked_users, name='blocked_users'),
+    path('friends/', views.friends_view, name='friends'),
+    path('settings/', views.settings_view, name='settings'),
 ]

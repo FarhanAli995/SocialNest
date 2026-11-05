@@ -1,156 +1,178 @@
-{% extends 'base.html' %} {% block title %}{{ profile_user.username }} &bull;
-Social Nest{% endblock %} {% block content %}
-<div class="card" style="overflow: hidden">
-  <div class="profile-cover">
-    {% if profile.cover_image %}<img
-      src="{{ profile.cover_image.url }}"
-      alt="Cover"
-    />{% endif %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ profile_user.get_full_name|default:profile_user.username }} (@{{ profile_user.username }}) &bull; SocialNest{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6 pb-12">
+
+  <!-- Profile Card (Mockup Screen 5) -->
+  <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+    
+    <!-- Cover Banner -->
+    <div class="h-52 sm:h-64 bg-slate-800 relative overflow-hidden group">
+      {% if profile.cover_image %}
+        <img src="{{ profile.cover_image.url }}" alt="Cover" class="w-full h-full object-cover cursor-pointer hover:scale-[1.01] transition duration-300 lightbox-media" title="Click to view cover full screen">
+      {% else %}
+        <!-- Default scenic landscape banner matching mockup -->
+        <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80"
+             alt="Default Cover" class="w-full h-full object-cover cursor-pointer hover:scale-[1.01] transition duration-300 lightbox-media" title="Click to view cover full screen">
+      {% endif %}
+      <button type="button" class="js-lightbox-btn absolute top-4 right-4 bg-black/40 hover:bg-black/60 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur transition opacity-0 group-hover:opacity-100 flex items-center gap-1.5 shadow-md" data-media="{% if profile.cover_image %}{{ profile.cover_image.url }}{% else %}https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80{% endif %}" data-type="image" title="Open cover full screen">
+        <i class="fa-solid fa-expand text-[10px]"></i> View Cover
+      </button>
+    </div>
+
+    <!-- Profile Header Info -->
+    <div class="px-6 sm:px-8 pb-6 relative z-10">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-16 sm:-mt-20 mb-6">
+        
+        <!-- Overlapping Avatar -->
+        <div class="flex items-end gap-4 relative z-20">
+          <div class="relative z-30 w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-3xl sm:text-4xl ring-4 ring-white shadow-xl shrink-0 cursor-pointer group" title="Click to view avatar full screen">
+            {% if profile.avatar %}
+              <img src="{{ profile.avatar.url }}" alt="{{ profile_user.username }}" class="w-full h-full object-cover lightbox-media group-hover:scale-105 transition duration-300">
+            {% else %}
+              {{ profile_user.username|first|upper }}
+            {% endif %}
+            <span class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 grid place-items-center text-white text-sm transition rounded-full pointer-events-none">
+              <i class="fa-solid fa-expand"></i>
+            </span>
+          </div>
+          <div class="pb-1">
+            <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+              {{ profile_user.get_full_name|default:profile_user.username }}
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-400 font-medium">@{{ profile_user.username }}</p>
+          </div>
+        </div>
+
+        <!-- Action CTAs: Edit Profile & Add Friend / Follow -->
+        <div class="flex items-center gap-2.5 pb-1">
+          {% if is_own_profile %}
+            <a href="{% url 'accounts:edit_profile' %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-semibold px-5 py-2.5 rounded-full transition border border-slate-200">
+              Edit Profile
+            </a>
+            <a href="{% url 'accounts:friends' %}" class="bg-brand hover:bg-brand-dark text-white text-xs sm:text-sm font-semibold px-5 py-2.5 rounded-full transition shadow-md shadow-brand/20">
+              View Friends
+            </a>
+          {% else %}
+            <a href="{% url 'chat:start' profile_user.id %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-semibold px-5 py-2.5 rounded-full transition border border-slate-200">
+              <i class="fa-regular fa-comment mr-1"></i> Message
+            </a>
+            <form method="post" action="{% url 'accounts:follow_toggle' profile_user.username %}">
+              {% csrf_token %}
+              <button type="submit" class="bg-brand hover:bg-brand-dark text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-full transition shadow-md shadow-brand/20">
+                {% if is_following %}Following{% elif follows_you %}Follow Back{% else %}Add Friend{% endif %}
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Stats Row (Mockup Screen 5: 245 Posts | 1.2K Friends | 890 Followers) -->
+      <div class="flex items-center gap-8 py-3 text-sm text-slate-500">
+        <div>
+          <span class="font-extrabold text-slate-900 text-base">{{ posts|length }}</span>
+          <span class="text-xs ml-1 font-medium">Posts</span>
+        </div>
+        <div>
+          <span class="font-extrabold text-slate-900 text-base">{{ profile_user.following.count }}</span>
+          <span class="text-xs ml-1 font-medium">Friends</span>
+        </div>
+        <div>
+          <span class="font-extrabold text-slate-900 text-base">{{ profile_user.followers.count }}</span>
+          <span class="text-xs ml-1 font-medium">Followers</span>
+        </div>
+      </div>
+
+      {% if profile.bio %}
+        <p class="text-sm text-slate-700 mt-2 font-normal leading-relaxed max-w-xl">{{ profile.bio }}</p>
+      {% endif %}
+
+      <!-- Navigation Tabs (Mockup Screen 5: Posts, Friends, Photos, About) -->
+      <div class="flex items-center gap-8 border-t border-slate-100 mt-6 pt-1 text-sm font-bold">
+        <button type="button" class="text-brand border-b-2 border-brand pb-3 pt-3 transition">Posts</button>
+        <a href="{% url 'accounts:friends' %}" class="text-slate-500 hover:text-slate-800 pb-3 pt-3 transition">Friends</a>
+        <button type="button" class="text-slate-500 hover:text-slate-800 pb-3 pt-3 transition">Photos</button>
+        <button type="button" class="text-slate-500 hover:text-slate-800 pb-3 pt-3 transition">About</button>
+      </div>
+
+    </div>
   </div>
 
-  <div class="profile-head">
-    <div class="profile-actions">
-      {% if is_own_profile %}
-      <a href="{% url 'accounts:edit_profile' %}" class="btn btn--outline"
-        ><i class="fa-regular fa-pen-to-square"></i> Edit Profile</a
-      >
-      <a href="{% url 'accounts:blocked_users' %}" class="btn btn--outline"
-        >Blocked users</a
-      >
-      {% else %} {% if user.is_authenticated %}
-      <a href="{% url 'chat:start' profile_user.id %}" class="btn btn--primary"
-        ><i class="fa-regular fa-comment"></i> Message</a
-      >
-      {% endif %}
-      <form
-        method="post"
-        action="{% url 'accounts:follow_toggle' profile_user.username %}"
-        class="inline-form"
-      >
-        {% csrf_token %} {% if is_following %}
-        <button type="submit" class="btn btn--outline">
-          <i class="fa-solid fa-user-minus"></i> Unfollow
-        </button>
-        {% elif follows_you %}
-        <button type="submit" class="btn btn--primary">
-          <i class="fa-solid fa-user-plus"></i> Follow Back
-        </button>
-        {% else %}
-        <button type="submit" class="btn btn--primary">
-          <i class="fa-solid fa-user-plus"></i> Follow
-        </button>
+  <!-- User Posts Feed (Mockup Screen 5) -->
+  <div class="space-y-5">
+    {% for post in posts %}
+      <article class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden post-card" data-post-id="{{ post.pk }}">
+        
+        <!-- Post Header -->
+        <div class="flex items-center justify-between p-4 sm:p-5 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-sm ring-2 ring-indigo-50">
+              {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" alt="{{ profile_user.username }}" class="w-full h-full object-cover">
+              {% else %}
+                {{ profile_user.username|first|upper }}
+              {% endif %}
+            </div>
+            <div>
+              <div class="font-bold text-slate-900 text-sm leading-tight">{{ profile_user.get_full_name|default:profile_user.username }}</div>
+              <span class="text-xs text-slate-400">{{ post.created_at|timesince }} ago</span>
+            </div>
+          </div>
+          <button type="button" class="w-8 h-8 grid place-items-center rounded-full hover:bg-slate-100 text-slate-400 transition">
+            <i class="fa-solid fa-ellipsis"></i>
+          </button>
+        </div>
+
+        {% if post.text %}
+          <div class="px-5 pb-3 text-sm text-slate-800 leading-relaxed font-normal">
+            {{ post.text|linebreaksbr }}
+          </div>
         {% endif %}
-      </form>
-      <form
-        method="post"
-        action="{% url 'accounts:block_toggle' profile_user.username %}"
-        class="inline-form"
-      >
-        {% csrf_token %}
-        <button type="submit" class="btn btn--outline">Block</button>
-      </form>
-      {% endif %}
-    </div>
 
-    <div class="profile-avatar">
-      {% if profile.avatar %}
-      <img
-        src="{{ profile.avatar.url }}"
-        alt="{{ profile_user.username }}"
-        onerror="
-          this.style.display = 'none';
-          this.nextElementSibling.style.display = 'grid';
-        "
-      />
-      <span class="avatar-fallback" style="font-size: 40px; display: none"
-        >{{ profile_user.username|first|upper }}</span
-      >
-      {% else %}
-      <span class="avatar-fallback" style="font-size: 40px"
-        >{{ profile_user.username|first|upper }}</span
-      >
-      {% endif %}
-    </div>
+        {% if post.image %}
+          <div class="bg-slate-100 overflow-hidden relative group">
+            <img src="{{ post.image.url }}" alt="Post image" class="w-full max-h-[500px] object-cover cursor-pointer lightbox-media hover:opacity-95 transition">
+            <button type="button" class="js-lightbox-btn absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 hover:bg-black/75 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition shadow-lg z-10" data-media="{{ post.image.url }}" data-type="image" title="Open full screen">
+              <i class="fa-solid fa-expand text-xs"></i>
+            </button>
+          </div>
+        {% elif post.video %}
+          <div class="bg-black overflow-hidden relative group">
+            <video controls src="{{ post.video.url }}" class="w-full max-h-[500px] lightbox-media"></video>
+            <button type="button" class="js-lightbox-btn absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 hover:bg-black/75 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition shadow-lg z-10" data-media="{{ post.video.url }}" data-type="video" title="Open full screen">
+              <i class="fa-solid fa-expand text-xs"></i>
+            </button>
+          </div>
+        {% endif %}
 
-    <h1 class="profile-name">
-      {{ profile_user.get_full_name|default:profile_user.username }}
-    </h1>
-    <p class="profile-tagline">{{ profile.bio|default:'No bio yet.' }}</p>
+        <div class="flex items-center justify-between px-5 py-3 border-t border-slate-100 text-slate-500 text-sm">
+          <form method="post" action="{% url 'posts:like_toggle' post.pk %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition hover:bg-slate-50 text-slate-600">
+              <i class="fa-regular fa-heart text-base"></i>
+              <span class="text-xs font-semibold">{{ post.likes_count }}</span>
+            </button>
+          </form>
 
-    <div class="profile-meta">
-      {% if profile.location %}
-      <span
-        ><i class="fa-solid fa-location-dot"></i> {{ profile.location }}</span
-      >
-      {% endif %} {% if profile.website %}
-      <span
-        ><i class="fa-solid fa-link"></i>
-        <a
-          href="{{ profile.website }}"
-          target="_blank"
-          rel="noopener"
-          class="link"
-          >{{ profile.website|cut:'https://'|cut:'http://'|truncatechars:32
-          }}</a
-        ></span
-      >
-      {% endif %}
-      <span
-        ><i class="fa-regular fa-calendar"></i> Joined {{
-        profile_user.date_joined|date:'F Y' }}</span
-      >
-    </div>
+          <a href="{% url 'posts:post_detail' post.pk %}" class="flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-slate-600 hover:bg-slate-50 transition">
+            <i class="fa-regular fa-comment text-base"></i>
+            <span class="text-xs font-semibold">{{ post.comments_count }}</span>
+          </a>
 
-    <div class="profile-stats">
-      <div>
-        <div class="profile-stat__num">{{ posts|length }}</div>
-        <div class="profile-stat__label">Posts</div>
+          <a href="{% url 'posts:post_detail' post.pk %}" class="flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-slate-600 hover:bg-slate-50 transition">
+            <i class="fa-solid fa-share-nodes text-base"></i>
+          </a>
+        </div>
+      </article>
+    {% empty %}
+      <div class="bg-white rounded-3xl border border-slate-100 p-12 text-center text-slate-400 shadow-sm">
+        <i class="fa-regular fa-images text-3xl mb-3 block"></i>
+        <p class="font-medium text-sm">No posts published by this user yet.</p>
       </div>
-      <div>
-        <div class="profile-stat__num">{{ profile_user.followers.count }}</div>
-        <div class="profile-stat__label">Followers</div>
-      </div>
-      <div>
-        <div class="profile-stat__num">{{ profile_user.following.count }}</div>
-        <div class="profile-stat__label">Following</div>
-      </div>
-    </div>
-
-    <div class="profile-tabs">
-      <a href="#" class="profile-tab is-active">Posts</a>
-      <a href="#" class="profile-tab">Media</a>
-      <a href="#" class="profile-tab">Likes</a>
-      <a href="#" class="profile-tab">About</a>
-    </div>
+    {% endfor %}
   </div>
-</div>
 
-<div class="posts-grid">
-  {% for post in posts %}
-  <a href="{% url 'posts:post_detail' post.pk %}" class="card grid-card">
-    <div class="grid-card__media">
-      {% if post.image %}
-      <img src="{{ post.image.url }}" alt="Post" />
-      {% else %}
-      <div class="grid-card__media--text">{{ post.text|truncatechars:70 }}</div>
-      {% endif %}
-    </div>
-    <div class="grid-card__title">
-      {{ post.text|default:'Untitled post'|truncatechars:60 }}
-    </div>
-    <div class="grid-card__stats">
-      <span><i class="fa-regular fa-heart"></i> {{ post.likes_count }}</span>
-      <span
-        ><i class="fa-regular fa-comment"></i> {{ post.comments_count }}</span
-      >
-      <span><i class="fa-solid fa-share-nodes"></i> 1</span>
-    </div>
-  </a>
-  {% empty %}
-  <div class="card empty" style="grid-column: 1/-1">
-    <i class="fa-regular fa-images"></i>
-    <p>No posts to show yet.</p>
-  </div>
-  {% endfor %}
 </div>
 {% endblock %}

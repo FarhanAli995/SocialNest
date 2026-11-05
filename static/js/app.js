@@ -140,4 +140,95 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
   });
+
+  // --- Global Fullscreen Media Lightbox Viewer ---
+  var lightbox = document.getElementById('mediaLightbox');
+  var lightboxImg = document.getElementById('lightboxImg');
+  var lightboxVideo = document.getElementById('lightboxVideo');
+  var lightboxClose = document.getElementById('lightboxClose');
+  var lightboxExternal = document.getElementById('lightboxOpenExternal');
+
+  function openLightbox(url, isVideo) {
+    if (!lightbox || !url) return;
+    if (isVideo) {
+      if (lightboxImg) {
+        lightboxImg.classList.add('hidden');
+        lightboxImg.src = '';
+      }
+      if (lightboxVideo) {
+        lightboxVideo.src = url;
+        lightboxVideo.classList.remove('hidden');
+        lightboxVideo.play().catch(function () {});
+      }
+    } else {
+      if (lightboxVideo) {
+        lightboxVideo.pause();
+        lightboxVideo.classList.add('hidden');
+        lightboxVideo.src = '';
+      }
+      if (lightboxImg) {
+        lightboxImg.src = url;
+        lightboxImg.classList.remove('hidden');
+      }
+    }
+    if (lightboxExternal) lightboxExternal.href = url;
+    lightbox.classList.remove('hidden');
+    lightbox.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    if (!lightbox) return;
+    lightbox.classList.add('hidden');
+    lightbox.classList.remove('flex');
+    if (lightboxVideo) {
+      lightboxVideo.pause();
+      lightboxVideo.src = '';
+      lightboxVideo.classList.add('hidden');
+    }
+    if (lightboxImg) {
+      lightboxImg.src = '';
+      lightboxImg.classList.add('hidden');
+    }
+    document.body.style.overflow = '';
+  }
+
+  if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
+  if (lightbox) {
+    lightbox.addEventListener('click', function (e) {
+      if (e.target === lightbox || e.target.id === 'mediaLightbox') {
+        closeLightbox();
+      }
+    });
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && lightbox && !lightbox.classList.contains('hidden')) {
+      closeLightbox();
+    }
+  });
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.js-lightbox-btn');
+    if (btn) {
+      e.preventDefault();
+      e.stopPropagation();
+      var mediaUrl = btn.dataset.media;
+      var isVideo = btn.dataset.type === 'video';
+      openLightbox(mediaUrl, isVideo);
+      return;
+    }
+
+    var targetMedia = e.target.closest('.lightbox-media');
+    if (targetMedia) {
+      var anchor = targetMedia.closest('a');
+      if (anchor) {
+        e.preventDefault();
+      }
+      var isVideo = targetMedia.tagName === 'VIDEO';
+      var src = isVideo ? (targetMedia.currentSrc || targetMedia.src) : (targetMedia.currentSrc || targetMedia.src);
+      if (src) {
+        openLightbox(src, isVideo);
+      }
+    }
+  });
 });

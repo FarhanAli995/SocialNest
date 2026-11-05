@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Settings &bull; SocialNest{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto pb-12">
+  
+  <div class="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6 items-start">
+    
+    <!-- Left Settings Menu (Mockup Screen 15) -->
+    <div class="bg-white rounded-3xl border border-slate-100 p-3 shadow-sm space-y-1">
+      <div class="px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+        Settings
+      </div>
+
+      <a href="{% url 'accounts:settings' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm bg-brand-light text-brand transition">
+        <i class="fa-regular fa-user w-4"></i>
+        <span>Account</span>
+      </a>
+
+      <a href="{% url 'accounts:edit_profile' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-2xl font-semibold text-xs sm:text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+        <i class="fa-solid fa-lock w-4"></i>
+        <span>Privacy</span>
+      </a>
+
+      <a href="{% url 'notifications:list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-2xl font-semibold text-xs sm:text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+        <i class="fa-regular fa-bell w-4"></i>
+        <span>Notifications</span>
+      </a>
+
+      <button type="button" onclick="document.getElementById('themeToggle').click()" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl font-semibold text-xs sm:text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition text-left">
+        <i class="fa-solid fa-palette w-4"></i>
+        <span>Appearance</span>
+      </button>
+
+      <a href="{% url 'accounts:blocked_users' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-2xl font-semibold text-xs sm:text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+        <i class="fa-solid fa-ban w-4"></i>
+        <span>Blocked Users</span>
+      </a>
+
+      <a href="mailto:support@socialnest.com" class="flex items-center gap-3 px-4 py-2.5 rounded-2xl font-semibold text-xs sm:text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+        <i class="fa-regular fa-circle-question w-4"></i>
+        <span>Help & Support</span>
+      </a>
+
+      <div class="border-t border-slate-100 my-2 pt-1"></div>
+
+      <form action="{% url 'accounts:logout' %}" method="post">
+        {% csrf_token %}
+        <button type="submit" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl font-semibold text-xs sm:text-sm text-red-500 hover:bg-red-50 transition">
+          <i class="fa-solid fa-arrow-right-from-bracket w-4"></i>
+          <span>Logout</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Right Settings Pane: Account Settings (Mockup Screen 15) -->
+    <div class="bg-white rounded-3xl border border-slate-100 p-8 sm:p-10 shadow-sm">
+      <div class="mb-8">
+        <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Account Settings</h1>
+        <p class="text-xs sm:text-sm text-slate-400 mt-1">Update your account details</p>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Change Photo Section -->
+        <div class="flex items-center gap-5 pb-4 border-b border-slate-100">
+          <div class="w-20 h-20 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-2xl ring-4 ring-indigo-50 shadow-sm shrink-0">
+            <img id="settings-avatar-preview"
+                 src="{% if user.profile.avatar %}{{ user.profile.avatar.url }}{% endif %}"
+                 alt="Avatar"
+                 class="w-full h-full object-cover {% if not user.profile.avatar %}hidden{% endif %}">
+            <span id="settings-avatar-placeholder" class="{% if user.profile.avatar %}hidden{% endif %}">
+              {{ user.username|first|upper }}
+            </span>
+          </div>
+
+          <div>
+            <label for="settings_avatar"
+              class="inline-flex items-center gap-2 text-xs font-bold text-brand bg-indigo-50 hover:bg-brand hover:text-white px-4 py-2 rounded-full cursor-pointer transition">
+              <i class="fa-solid fa-camera text-xs"></i> Change Photo
+            </label>
+            <input id="settings_avatar" type="file" name="avatar" accept="image/*" class="hidden">
+            <p class="text-[11px] text-slate-400 mt-1.5">JPG, GIF or PNG. Max size of 10MB.</p>
+          </div>
+        </div>
+
+        <!-- Full Name -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Full Name</label>
+          <input type="text" name="full_name" value="{{ user.get_full_name|default:user.username }}"
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition bg-slate-50/50 focus:bg-white">
+        </div>
+
+        <!-- Email Address -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Email Address</label>
+          <input type="email" name="email" value="{{ user.email }}" placeholder="your-email@example.com"
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition bg-slate-50/50 focus:bg-white">
+        </div>
+
+        <!-- Save Changes Button (Mockup Screen 15) -->
+        <div class="pt-4">
+          <button type="submit"
+            class="w-full bg-brand hover:bg-brand-dark text-white font-semibold py-3 rounded-xl transition shadow-md shadow-brand/20">
+            Save Changes
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  const fileInput = document.getElementById('settings_avatar');
+  const preview = document.getElementById('settings-avatar-preview');
+  const placeholder = document.getElementById('settings-avatar-placeholder');
+
+  if (fileInput) {
+    fileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(re) {
+          preview.src = re.target.result;
+          preview.classList.remove('hidden');
+          if (placeholder) placeholder.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+</script>
+{% endblock %}
+
