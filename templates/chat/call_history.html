@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Call History &bull; SocialNest{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-5 pb-12">
+  
+  <!-- Header Card & Filter Pills (Mockup Screen 14) -->
+  <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-4">
+    <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">Call History</h1>
+    
+    <!-- Filter Pills (All, Voice, Video) -->
+    <div class="flex items-center gap-2">
+      <button type="button" class="px-5 py-1.5 rounded-full text-xs font-bold bg-brand text-white shadow-xs">
+        All
+      </button>
+      <button type="button" class="px-5 py-1.5 rounded-full text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+        Voice
+      </button>
+      <button type="button" class="px-5 py-1.5 rounded-full text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+        Video
+      </button>
+    </div>
+  </div>
+
+  <!-- Call History List (Mockup Screen 14) -->
+  <div class="bg-white rounded-3xl border border-slate-100 p-3 sm:p-4 shadow-sm divide-y divide-slate-100">
+    {% for call in calls %}
+      {% with other=call.receiver %}
+      {% if call.caller_id != me.id %}{% with other=call.caller %}{% endwith %}{% endif %}
+      <div class="flex items-center justify-between gap-4 p-3.5 rounded-2xl hover:bg-slate-50 transition">
+        
+        <div class="flex items-center gap-3.5 min-w-0">
+          <!-- Avatar -->
+          <div class="w-11 h-11 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-xs shrink-0 ring-2 ring-indigo-50">
+            {% if call.caller_id == me.id %}
+              {% if call.receiver.profile.avatar %}
+                <img src="{{ call.receiver.profile.avatar.url }}" alt="" class="w-full h-full object-cover">
+              {% else %}
+                {{ call.receiver.username|first|upper }}
+              {% endif %}
+            {% else %}
+              {% if call.caller.profile.avatar %}
+                <img src="{{ call.caller.profile.avatar.url }}" alt="" class="w-full h-full object-cover">
+              {% else %}
+                {{ call.caller.username|first|upper }}
+              {% endif %}
+            {% endif %}
+          </div>
+
+          <!-- Contact Name & Call Details -->
+          <div class="min-w-0">
+            <div class="font-bold text-slate-900 text-sm truncate">
+              {% if call.caller_id == me.id %}
+                {{ call.receiver.get_full_name|default:call.receiver.username }}
+              {% else %}
+                {{ call.caller.get_full_name|default:call.caller.username }}
+              {% endif %}
+            </div>
+            
+            <div class="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
+              {% if call.caller_id == me.id %}
+                <i class="fa-solid fa-arrow-up-right text-[10px] text-emerald-500"></i>
+                <span>Outgoing</span>
+              {% else %}
+                <i class="fa-solid fa-arrow-down-left text-[10px] text-blue-500"></i>
+                <span>Incoming</span>
+              {% endif %}
+              <span>&bull;</span>
+              <span>{{ call.duration|default:'2' }} min - {{ call.created_at|date:'M d' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Direct Callback Action Button (Mockup Screen 14) -->
+        <div class="shrink-0">
+          {% if call.caller_id == me.id %}
+            <a href="{% url 'chat:start' call.receiver.id %}" class="w-10 h-10 rounded-full bg-indigo-50 hover:bg-brand text-brand hover:text-white grid place-items-center text-sm transition" title="Video Call">
+              <i class="fa-solid fa-video"></i>
+            </a>
+          {% else %}
+            <a href="{% url 'chat:start' call.caller.id %}" class="w-10 h-10 rounded-full bg-indigo-50 hover:bg-brand text-brand hover:text-white grid place-items-center text-sm transition" title="Video Call">
+              <i class="fa-solid fa-video"></i>
+            </a>
+          {% endif %}
+        </div>
+
+      </div>
+      {% endwith %}
+    {% empty %}
+      <div class="p-12 text-center text-slate-400">
+        <div class="w-14 h-14 rounded-full bg-slate-100 text-slate-400 grid place-items-center text-xl mx-auto mb-3">
+          <i class="fa-solid fa-phone"></i>
+        </div>
+        <p class="text-sm font-semibold text-slate-700">No calls yet</p>
+        <p class="text-xs text-slate-400 mt-1">Your voice and video call logs will appear here.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

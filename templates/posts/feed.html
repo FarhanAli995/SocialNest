@@ -1,133 +1,401 @@
 {% extends 'base.html' %}
-{% block title %}Feed &bull; Social Nest{% endblock %}
+{% load static %}
+{% block title %}Home &bull; SocialNest{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/stories.css' %}">{% endblock %}
 
 {% block content %}
-<div class="feed-layout">
-  <div class="feed-main">
+<div class="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 items-start">
 
+  <!-- Center Feed Column (Mockup Screen 4) -->
+  <div class="min-w-0 space-y-5">
+
+    <!-- Stories Bar -->
     {% if user.is_authenticated %}
-    <form class="card composer" method="post" action="{% url 'posts:post_create' %}" enctype="multipart/form-data">
-      {% csrf_token %}
-      <div class="composer__top">
-        <div class="avatar avatar--sm">
+    <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-bold text-slate-900 text-sm">Stories</h3>
+        <a href="{% url 'stories:create' %}" class="text-xs font-semibold text-brand hover:underline">+ Add story</a>
+      </div>
+      <div id="story-bar" class="story-bar"></div>
+    </div>
+    {% endif %}
+
+    <!-- Create Post Composer Box (Mockup Screen 4) -->
+    {% if user.is_authenticated %}
+    <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold shrink-0 ring-2 ring-indigo-50">
           {% if user.profile.avatar %}
-            <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}">
+            <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="w-full h-full object-cover">
           {% else %}
-            <span class="avatar-fallback">{{ user.username|first|upper }}</span>
+            {{ user.username|first|upper }}
           {% endif %}
         </div>
-        <input type="text" name="text" placeholder="What's on your nest today?" maxlength="280">
+        <!-- Trigger button that opens the Create Post Modal -->
+        <button type="button" id="openModalBtn"
+          class="flex-1 text-left bg-slate-100 hover:bg-slate-200/70 rounded-full px-5 py-2.5 text-sm text-slate-500 font-medium transition">
+          Create a post...
+        </button>
       </div>
-      <div class="composer__actions">
-        <label class="composer__action" for="id_image"><i class="fa-regular fa-image"></i> Photo</label>
-        <input id="id_image" type="file" name="image" accept="image/*" class="visually-hidden">
-        <label class="composer__action" for="id_video"><i class="fa-solid fa-video"></i> Video</label>
-        <input id="id_video" type="file" name="video" accept="video/*" class="visually-hidden">
-        <button type="submit" class="btn btn--primary composer__submit"><i class="fa-regular fa-paper-plane"></i> Post</button>
+
+      <!-- Composer Quick Buttons matching Screen 4 -->
+      <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 px-2">
+        <button type="button" class="js-open-composer flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-emerald-600 transition" data-type="photo">
+          <i class="fa-regular fa-image text-emerald-500 text-base"></i>
+          <span>Photo</span>
+        </button>
+
+        <button type="button" class="js-open-composer flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-blue-600 transition" data-type="video">
+          <i class="fa-solid fa-video text-blue-500 text-base"></i>
+          <span>Video</span>
+        </button>
+
+        <button type="button" class="js-open-composer flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-amber-500 transition" data-type="feeling">
+          <i class="fa-regular fa-face-smile text-amber-500 text-base"></i>
+          <span>Feeling</span>
+        </button>
+
+        <button type="button" class="js-open-composer flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-rose-500 transition" data-type="checkin">
+          <i class="fa-solid fa-location-dot text-rose-500 text-base"></i>
+          <span>Check In</span>
+        </button>
       </div>
-    </form>
+    </div>
     {% endif %}
 
-    <div id="posts"></div>
-    {% if query %}
-      <p class="explore-note" style="margin:0 0 14px;">Showing results for &ldquo;<strong>{{ query }}</strong>&rdquo;</p>
-    {% endif %}
+    <!-- Posts Feed Stream (Mockup Screen 4) -->
+    <div id="feedContainer" class="space-y-5">
     {% for post in posts %}
-      <article class="card post-card">
-        <div class="post-card__head">
-          <a href="{% url 'accounts:profile_detail' post.author.username %}" class="avatar avatar--sm">
-            {% if post.author.profile.avatar %}
-              <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}">
-            {% else %}
-              <span class="avatar-fallback">{{ post.author.username|first|upper }}</span>
-            {% endif %}
-          </a>
-          <div class="post-card__meta">
-            <a href="{% url 'accounts:profile_detail' post.author.username %}" class="post-card__author">{{ post.author.username }}</a>
-            <div class="post-card__time">{{ post.created_at|timesince }} ago</div>
+      <article class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden post-card" data-post-id="{{ post.pk }}">
+        
+        <!-- Post Header -->
+        <div class="flex items-center justify-between p-4 pb-3">
+          <div class="flex items-center gap-3">
+            <a href="{% url 'accounts:profile_detail' post.author.username %}" class="w-10 h-10 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-sm ring-2 ring-indigo-50">
+              {% if post.author.profile.avatar %}
+                <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}" class="w-full h-full object-cover">
+              {% else %}
+                {{ post.author.username|first|upper }}
+              {% endif %}
+            </a>
+            <div>
+              <a href="{% url 'accounts:profile_detail' post.author.username %}" class="font-bold text-slate-900 text-sm hover:underline block leading-tight">
+                {{ post.author.get_full_name|default:post.author.username }}
+              </a>
+              <span class="text-xs text-slate-400">{{ post.created_at|timesince }} ago</span>
+            </div>
           </div>
-          <button class="menu-dot" type="button"><i class="fa-solid fa-ellipsis"></i></button>
+
+          <!-- Actions / Options Menu -->
+          <div class="flex items-center gap-1">
+            {% if post.author == user %}
+              <form method="post" action="{% url 'posts:post_delete' post.pk %}" onsubmit="return confirm('Delete this post?');">
+                {% csrf_token %}
+                <button type="submit" class="w-8 h-8 grid place-items-center rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition" title="Delete">
+                  <i class="fa-regular fa-trash-can text-sm"></i>
+                </button>
+              </form>
+            {% else %}
+              <button type="button" class="w-8 h-8 grid place-items-center rounded-full hover:bg-slate-100 text-slate-400 transition">
+                <i class="fa-solid fa-ellipsis"></i>
+              </button>
+            {% endif %}
+          </div>
         </div>
 
+        <!-- Post Text -->
         {% if post.text %}
-          <div class="post-card__body">{{ post.text|linebreaksbr }}</div>
+          <div class="px-4 pb-3 text-sm text-slate-800 leading-relaxed font-normal">
+            {{ post.text|linebreaksbr }}
+          </div>
         {% endif %}
 
+        <!-- Post Media -->
         {% if post.image %}
-          <a href="{% url 'posts:post_detail' post.pk %}" class="post-card__media"><img src="{{ post.image.url }}" alt="Post image"></a>
+          <div class="bg-slate-100 overflow-hidden relative group">
+            <img src="{{ post.image.url }}" alt="Post image" class="w-full max-h-[520px] object-cover hover:opacity-98 transition cursor-pointer lightbox-media">
+            <button type="button" class="js-lightbox-btn absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 hover:bg-black/75 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition shadow-lg z-10" data-media="{{ post.image.url }}" data-type="image" title="Open in full screen">
+              <i class="fa-solid fa-expand text-xs"></i>
+            </button>
+          </div>
         {% elif post.video %}
-          <div class="post-card__media"><video controls src="{{ post.video.url }}"></video></div>
+          <div class="bg-black overflow-hidden relative group">
+            <video controls src="{{ post.video.url }}" class="w-full max-h-[520px] lightbox-media"></video>
+            <button type="button" class="js-lightbox-btn absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 hover:bg-black/75 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition shadow-lg z-10" data-media="{{ post.video.url }}" data-type="video" title="Open in full screen">
+              <i class="fa-solid fa-expand text-xs"></i>
+            </button>
+          </div>
         {% endif %}
 
-        <div class="post-card__actions">
-          <form method="post" action="{% url 'posts:like_toggle' post.pk %}" class="inline-form">
+        <!-- Reaction Bar (Like, Comment, Share) -->
+        <div class="flex items-center justify-between px-4 py-3 border-t border-slate-100 text-slate-500 text-sm">
+          
+          <!-- Like Button -->
+          <form method="post" action="{% url 'posts:like_toggle' post.pk %}" class="inline">
             {% csrf_token %}
-            <button type="submit" class="post-action {% if post.pk in liked_ids %}is-liked{% endif %}">
-              {% if post.pk in liked_ids %}<i class="fa-solid fa-heart"></i>{% else %}<i class="fa-regular fa-heart"></i>{% endif %}
-              <span>{{ post.likes_count }}</span>
+            <button type="submit" class="like-btn flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition {% if post.pk in liked_ids %}text-rose-500 bg-rose-50{% else %}hover:bg-slate-50 text-slate-600{% endif %}">
+              {% if post.pk in liked_ids %}
+                <i class="fa-solid fa-heart text-base"></i>
+              {% else %}
+                <i class="fa-regular fa-heart text-base"></i>
+              {% endif %}
+              <span class="like-count text-xs font-semibold">{{ post.likes_count }}</span>
+              <span class="hidden sm:inline text-xs">Like</span>
             </button>
           </form>
-          <a href="{% url 'posts:post_detail' post.pk %}" class="post-action"><i class="fa-regular fa-comment"></i> <span>{{ post.comments_count }}</span></a>
-          <button type="button" class="post-action js-share" data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'posts:post_detail' post.pk %}">
-            <i class="fa-solid fa-share-nodes"></i> <span>Share</span>
+
+          <!-- Comment Button -->
+          <a href="{% url 'posts:post_detail' post.pk %}" class="flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-slate-600 hover:bg-slate-50 transition">
+            <i class="fa-regular fa-comment text-base"></i>
+            <span class="text-xs font-semibold">{{ post.comments_count }}</span>
+            <span class="hidden sm:inline text-xs">Comment</span>
+          </a>
+
+          <!-- Share Button -->
+          <button type="button" class="js-share flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-slate-600 hover:bg-slate-50 transition" data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'posts:post_detail' post.pk %}">
+            <i class="fa-solid fa-share-nodes text-base"></i>
+            <span class="hidden sm:inline text-xs">Share</span>
           </button>
         </div>
+
       </article>
     {% empty %}
-      <div class="card empty">
-        <i class="fa-regular fa-face-smile"></i>
-        <p>No posts yet. Be the first to share something!</p>
+      <div class="bg-white rounded-2xl border border-slate-100 p-12 text-center text-slate-400 shadow-sm">
+        <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 grid place-items-center text-2xl mx-auto mb-3">
+          <i class="fa-regular fa-newspaper"></i>
+        </div>
+        <h4 class="font-bold text-slate-700 text-base">No posts in your feed yet</h4>
+        <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Follow other users or create your first post above to get things rolling!</p>
       </div>
     {% endfor %}
+    </div>
+
   </div>
 
-  <aside class="sidebar">
-    <div class="card sidebar__card">
-      <div class="sidebar__title"><i class="fa-solid fa-arrow-trend-up"></i> Trending</div>
-      <div class="trending-item">
-        <div class="trending-item__tag">#DesignSystems</div>
-        <div class="trending-item__meta">1.2k posts &bull; Trending in Design</div>
+  <!-- Right Sidebar (Mockup Screen 4) -->
+  <aside class="hidden xl:block space-y-5 sticky top-24 self-start">
+    
+    <!-- Suggested Friends Card -->
+    <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-slate-900 text-sm tracking-tight">Suggested Friends</h3>
+        <a href="{% url 'accounts:friends' %}" class="text-xs font-semibold text-brand hover:underline">See All</a>
       </div>
-      <div class="trending-item">
-        <div class="trending-item__tag">#UrbanGardening</div>
-        <div class="trending-item__meta">842 posts &bull; Trending now</div>
-      </div>
-      <div class="trending-item">
-        <div class="trending-item__tag">#WebDevelopment</div>
-        <div class="trending-item__meta">2.4k posts &bull; Trending in Tech</div>
+
+      {% if suggested_users %}
+        <div class="space-y-3">
+          {% for u in suggested_users %}
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <a href="{% url 'accounts:profile_detail' u.username %}" class="w-9 h-9 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-xs shrink-0 ring-2 ring-indigo-50">
+                {% if u.profile.avatar %}
+                  <img src="{{ u.profile.avatar.url }}" alt="{{ u.username }}" class="w-full h-full object-cover">
+                {% else %}
+                  {{ u.username|first|upper }}
+                {% endif %}
+              </a>
+              <div class="min-w-0">
+                <a href="{% url 'accounts:profile_detail' u.username %}" class="text-xs font-bold text-slate-800 hover:underline truncate block">
+                  {{ u.get_full_name|default:u.username }}
+                </a>
+                <span class="text-[11px] text-slate-400 block truncate">@{{ u.username }}</span>
+              </div>
+            </div>
+
+            <form method="post" action="{% url 'accounts:follow_toggle' u.username %}">
+              {% csrf_token %}
+              <button type="submit" class="text-xs font-semibold text-brand bg-indigo-50 hover:bg-brand hover:text-white px-3 py-1 rounded-full transition shrink-0">
+                Add Friend
+              </button>
+            </form>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-xs text-slate-400">No suggestions right now.</p>
+      {% endif %}
+    </div>
+
+    <!-- Trending Topics Card (Mockup Screen 4) -->
+    <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
+      <h3 class="font-bold text-slate-900 text-sm mb-3 tracking-tight">Trending Topics</h3>
+      <div class="space-y-3">
+        <a href="{% url 'posts:explore' %}?q=SocialNest" class="block group">
+          <div class="text-xs font-bold text-slate-800 group-hover:text-brand transition">#SocialNest</div>
+          <div class="text-[11px] text-slate-400">12.5K posts</div>
+        </a>
+        <a href="{% url 'posts:explore' %}?q=Friends" class="block group">
+          <div class="text-xs font-bold text-slate-800 group-hover:text-brand transition">#Friends</div>
+          <div class="text-[11px] text-slate-400">8.7K posts</div>
+        </a>
+        <a href="{% url 'posts:explore' %}?q=Nature" class="block group">
+          <div class="text-xs font-bold text-slate-800 group-hover:text-brand transition">#Nature</div>
+          <div class="text-[11px] text-slate-400">5.1K posts</div>
+        </a>
       </div>
     </div>
 
-    {% if suggested_users %}
-    <div class="card sidebar__card">
-      <div class="sidebar__title"><i class="fa-solid fa-user-group"></i> Contacts</div>
-      {% for u in suggested_users %}
-        <a href="{% url 'accounts:profile_detail' u.username %}" class="contact">
-          <span class="contact__avatar" style="background: var(--indigo);">
-            {% if u.profile.avatar %}<img src="{{ u.profile.avatar.url }}" alt="{{ u.username }}">{% else %}{{ u.username|first|upper }}{% endif %}
-          </span>
-          <span class="contact__name">{{ u.username }}</span>
-          <span class="contact__dot"></span>
-        </a>
-      {% endfor %}
-    </div>
-    {% endif %}
   </aside>
+
 </div>
+
+<!-- Create Post Modal Dialog (Mockup Screen 7) -->
+<div id="createPostModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden place-items-center p-4">
+  <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <h2 class="text-base font-extrabold text-slate-900">Create a Post</h2>
+      <button type="button" id="closeModalBtn" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 grid place-items-center transition">
+        <i class="fa-solid fa-xmark text-sm"></i>
+      </button>
+    </div>
+
+    <!-- Modal Form -->
+    <form method="post" action="{% url 'posts:post_create' %}" enctype="multipart/form-data" class="p-6 space-y-4">
+      {% csrf_token %}
+      
+      <!-- User info & Textarea -->
+      <div class="space-y-3">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-xs ring-2 ring-indigo-50">
+            {% if user.profile.avatar %}
+              <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="w-full h-full object-cover">
+            {% else %}
+              {{ user.username|first|upper }}
+            {% endif %}
+          </div>
+          <div>
+            <div class="text-xs font-bold text-slate-900">{{ user.get_full_name|default:user.username }}</div>
+            <div class="text-[10px] text-slate-400">Posting to Public Feed</div>
+          </div>
+        </div>
+
+        <textarea name="text" id="modalPostText" rows="3" maxlength="280" placeholder="What's on your mind?"
+          class="w-full text-sm text-slate-800 placeholder-slate-400 outline-none resize-none border-none focus:ring-0 p-0 leading-relaxed"></textarea>
+      </div>
+
+      <!-- Quick Action Attachment Bar -->
+      <div class="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/70">
+        <label for="modal_image" class="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-emerald-600 cursor-pointer px-2 py-1 transition">
+          <i class="fa-regular fa-image text-emerald-500 text-sm"></i> Photo
+        </label>
+        <input id="modal_image" type="file" name="image" accept="image/*" class="hidden">
+
+        <label for="modal_video" class="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600 cursor-pointer px-2 py-1 transition">
+          <i class="fa-solid fa-video text-blue-500 text-sm"></i> Video
+        </label>
+        <input id="modal_video" type="file" name="video" accept="video/*" class="hidden">
+
+        <button type="button" class="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-amber-500 px-2 py-1 transition" onclick="document.getElementById('modalPostText').value += ' 😊 '">
+          <i class="fa-regular fa-face-smile text-amber-500 text-sm"></i> Feeling
+        </button>
+
+        <button type="button" class="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-rose-500 px-2 py-1 transition" onclick="document.getElementById('modalPostText').value += ' 📍 Lahore, Pakistan '">
+          <i class="fa-solid fa-location-dot text-rose-500 text-sm"></i> Check in
+        </button>
+      </div>
+
+      <!-- Preview Box (Mockup Screen 7) -->
+      <div id="mediaPreview" class="relative hidden rounded-2xl overflow-hidden border border-slate-200">
+        <img id="previewImg" src="" alt="Preview" class="w-full max-h-48 object-cover">
+        <button type="button" id="removeMediaBtn" class="absolute top-2 right-2 w-7 h-7 bg-slate-900/70 hover:bg-slate-900 text-white rounded-full grid place-items-center text-xs transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Footer Bar: Privacy Selector & Post Submit -->
+      <div class="flex items-center justify-between pt-2">
+        <div class="relative">
+          <select class="appearance-none bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 pl-7 pr-8 rounded-full outline-none cursor-pointer transition">
+            <option value="public">🌐 Public</option>
+            <option value="friends">👥 Friends</option>
+          </select>
+          <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 pointer-events-none"></i>
+        </div>
+
+        <button type="submit" class="bg-brand hover:bg-brand-dark text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-full transition shadow-md shadow-brand/20">
+          Post
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/stories.js' %}" defer></script>
 <script>
+  // Create Post Modal behavior
+  const modal = document.getElementById('createPostModal');
+  const openBtn = document.getElementById('openModalBtn');
+  const closeBtn = document.getElementById('closeModalBtn');
+  const fileInput = document.getElementById('modal_image');
+  const previewBox = document.getElementById('mediaPreview');
+  const previewImg = document.getElementById('previewImg');
+  const removeMediaBtn = document.getElementById('removeMediaBtn');
+
+  function showModal() {
+    modal.classList.remove('hidden');
+    modal.classList.add('grid');
+    document.getElementById('modalPostText').focus();
+  }
+  function hideModal() {
+    modal.classList.add('hidden');
+    modal.classList.remove('grid');
+  }
+
+  if (openBtn) openBtn.addEventListener('click', showModal);
+  if (closeBtn) closeBtn.addEventListener('click', hideModal);
+
+  document.querySelectorAll('.js-open-composer').forEach(btn => {
+    btn.addEventListener('click', () => {
+      showModal();
+      const type = btn.dataset.type;
+      if (type === 'photo') fileInput.click();
+      if (type === 'video') document.getElementById('modal_video').click();
+      if (type === 'feeling') document.getElementById('modalPostText').value += ' 😊 ';
+      if (type === 'checkin') document.getElementById('modalPostText').value += ' 📍 ';
+    });
+  });
+
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          previewImg.src = re.target.result;
+          previewBox.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  if (removeMediaBtn) {
+    removeMediaBtn.addEventListener('click', () => {
+      fileInput.value = '';
+      previewBox.classList.add('hidden');
+      previewImg.src = '';
+    });
+  }
+
+  // Close modal on backdrop click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) hideModal();
+  });
+
+  // Share button
   document.querySelectorAll('.js-share').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var url = btn.dataset.url;
-      if (navigator.share) {
-        navigator.share({ url: url }).catch(function () {});
-      } else {
-        navigator.clipboard.writeText(url).then(function () {
-          var label = btn.querySelector('span');
-          if (label) { label.textContent = 'Copied!'; setTimeout(function () { label.textContent = 'Share'; }, 1500); }
-        });
+      if (navigator.share) navigator.share({ url: url }).catch(function(){});
+      else {
+        navigator.clipboard.writeText(url);
+        alert('Post link copied to clipboard!');
       }
     });
   });

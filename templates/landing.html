@@ -1,0 +1,162 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SocialNest — Connect. Share. Belong.</title>
+  <link rel="icon" href="{% static 'icons/image_82559b-generate-this-same-image-in-hd.ico' %}" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: {
+            brand: { DEFAULT: '#4F46E5', dark: '#4338CA', light: '#EEF2FF' },
+            navy: { DEFAULT: '#1E1B4B', dark: '#151336', card: '#181834' }
+          }
+        }
+      }
+    };
+  </script>
+  <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+  <!-- Top Navigation (Mockup Screen 1) -->
+  <header class="bg-white/90 backdrop-blur sticky top-0 z-50 border-b border-slate-100">
+    <div class="max-w-6xl mx-auto px-6 h-18 py-3.5 flex items-center justify-between">
+      
+      <!-- Logo -->
+      <a href="{% url 'landing' %}" class="flex items-center gap-2.5 text-slate-900 font-extrabold text-xl tracking-tight">
+        <span class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand to-indigo-500 grid place-items-center text-white shadow-sm">
+          <i class="fa-solid fa-dove text-base"></i>
+        </span>
+        <span>SocialNest</span>
+      </a>
+
+      <!-- Center Nav Links -->
+      <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
+        <a href="#home" class="text-brand hover:text-brand-dark transition">Home</a>
+        <a href="#features" class="hover:text-brand transition">Features</a>
+        <a href="#about" class="hover:text-brand transition">About</a>
+        <a href="#contact" class="hover:text-brand transition">Contact</a>
+      </nav>
+
+      <!-- Right Auth CTA -->
+      <div class="flex items-center gap-3">
+        {% if user.is_authenticated %}
+          <a href="{% url 'posts:feed' %}" class="bg-brand hover:bg-brand-dark text-white text-sm font-semibold px-6 py-2.5 rounded-full transition shadow-md shadow-brand/20">
+            Open Feed
+          </a>
+        {% else %}
+          <a href="{% url 'accounts:login' %}" class="text-sm font-semibold text-slate-700 hover:text-brand px-3 py-2 transition">
+            Login
+          </a>
+          <a href="{% url 'accounts:register' %}" class="bg-brand hover:bg-brand-dark text-white text-sm font-semibold px-6 py-2.5 rounded-full transition shadow-md shadow-brand/20">
+            Sign Up
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 w-full flex-1">
+    
+    <!-- Hero Dark Banner (Mockup Screen 1) -->
+    <section id="home" class="my-8 sm:my-10 bg-[#181834] rounded-3xl p-8 sm:p-12 lg:p-14 text-white relative overflow-hidden shadow-2xl">
+      <!-- Background subtle glow -->
+      <div class="absolute -top-24 -right-24 w-96 h-96 bg-brand/20 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="grid md:grid-cols-2 gap-10 lg:gap-14 items-center relative z-10">
+        <div>
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.15] text-white">
+            Connect. Share.<br>Belong.
+          </h1>
+          <p class="text-slate-300 text-base sm:text-lg font-normal mt-5 mb-8 leading-relaxed max-w-md">
+            Your social world, in one place.
+          </p>
+          <div class="flex flex-wrap items-center gap-4">
+            <a href="{% url 'accounts:register' %}" class="bg-brand hover:bg-brand-dark text-white text-sm sm:text-base font-semibold px-7 py-3 rounded-full transition shadow-lg shadow-brand/30 transform hover:-translate-y-0.5">
+              Get Started
+            </a>
+            <a href="#features" class="bg-white/10 hover:bg-white/20 text-white text-sm sm:text-base font-semibold px-7 py-3 rounded-full transition border border-white/20 backdrop-blur">
+              Learn More
+            </a>
+          </div>
+        </div>
+
+        <!-- Hero Image from Mockup -->
+        <div class="relative">
+          <div class="rounded-2xl overflow-hidden shadow-2xl border-4 border-white/10">
+            <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1000&q=80"
+                 alt="Friends connecting on SocialNest"
+                 class="w-full h-[320px] sm:h-[360px] object-cover">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Why SocialNest? Feature Section (Mockup Screen 1) -->
+    <section id="features" class="py-14 text-center">
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+        Why SocialNest?
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto mt-10">
+        
+        <!-- Card 1: Stay Connected -->
+        <div class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-100 shadow-sm hover:shadow-md transition">
+          <div class="w-14 h-14 rounded-full bg-indigo-50 text-brand grid place-items-center text-xl mx-auto mb-4">
+            <i class="fa-solid fa-user-group"></i>
+          </div>
+          <h3 class="font-bold text-slate-900 text-base sm:text-lg">Stay Connected</h3>
+          <p class="text-slate-500 text-sm mt-1">with Friends</p>
+        </div>
+
+        <!-- Card 2: Share Your Moments -->
+        <div class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-100 shadow-sm hover:shadow-md transition">
+          <div class="w-14 h-14 rounded-full bg-indigo-50 text-brand grid place-items-center text-xl mx-auto mb-4">
+            <i class="fa-solid fa-shapes"></i>
+          </div>
+          <h3 class="font-bold text-slate-900 text-base sm:text-lg">Share Your</h3>
+          <p class="text-slate-500 text-sm mt-1">Moments</p>
+        </div>
+
+        <!-- Card 3: Discover New People -->
+        <div class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-100 shadow-sm hover:shadow-md transition">
+          <div class="w-14 h-14 rounded-full bg-indigo-50 text-brand grid place-items-center text-xl mx-auto mb-4">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
+          <h3 class="font-bold text-slate-900 text-base sm:text-lg">Discover</h3>
+          <p class="text-slate-500 text-sm mt-1">New People</p>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Clean Footer -->
+  <footer id="contact" class="bg-white border-t border-slate-100 py-8 text-center text-xs text-slate-400 mt-12">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2 text-slate-700 font-bold">
+        <i class="fa-solid fa-dove text-brand"></i> SocialNest
+      </div>
+      <div>
+        &copy; 2026 SocialNest. All rights reserved.
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="#home" class="hover:text-brand transition">Privacy Policy</a>
+        <a href="#features" class="hover:text-brand transition">Terms of Service</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

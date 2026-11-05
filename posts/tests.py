@@ -5,7 +5,6 @@ from django.urls import reverse
 class LoginRequiredPageTests(TestCase):
     def test_app_pages_redirect_anonymous_visitors_to_login(self):
         protected_urls = [
-            reverse('posts:feed'),
             reverse('posts:explore'),
             reverse('posts:post_detail', args=[1]),
             reverse('chat:inbox'),
@@ -24,6 +23,11 @@ class LoginRequiredPageTests(TestCase):
                     response.url,
                     f'{reverse("accounts:login")}?next={url}',
                 )
+
+        # The feed is public-facing and redirects anonymous users to the landing page.
+        response = self.client.get(reverse('posts:feed'))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('landing'))
 
     def test_login_and_registration_remain_public(self):
         for url in (

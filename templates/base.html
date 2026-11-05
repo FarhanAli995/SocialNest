@@ -1,144 +1,232 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en" class="{% if request.resolver_match.url_name == 'login' or request.resolver_match.url_name == 'register' %}auth-page-shell{% endif %}">
+<html lang="en" class="{% if request.resolver_match.url_name == 'login' or request.resolver_match.url_name == 'register' %}auth-shell{% endif %}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Social Nest{% endblock %}</title>
-
+  <title>{% block title %}SocialNest{% endblock %}</title>
+  <link rel="icon" href="{% static 'icons/image_82559b-generate-this-same-image-in-hd.ico' %}" type="image/x-icon">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-  {% if request.resolver_match.url_name != 'login' and request.resolver_match.url_name != 'register' %}
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: {
+            brand: { DEFAULT: '#4F46E5', dark: '#4338CA', light: '#EEF2FF' },
+            navy: { DEFAULT: '#1E1B4B', dark: '#151336', light: '#28245C' },
+          }
+        }
+      }
+    };
+  </script>
   <script>
     try {
-      if (localStorage.getItem('socialnest-theme') === 'dark') {
-        document.documentElement.dataset.theme = 'dark';
-      }
-    } catch (error) {
-      console.warn('Unable to read the saved theme preference.', error);
-    }
+      if (localStorage.getItem('socialnest-theme') === 'dark') document.documentElement.classList.add('dark');
+    } catch (e) {}
   </script>
-  {% endif %}
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #F8FAFC; }
+    .dark body { background: #0f172a; color: #e2e8f0; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .toast-enter { animation: slideIn 0.3s ease-out; }
+    @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  </style>
   {% block extra_head %}{% endblock %}
 </head>
-<body>
-  <header class="site-header">
-    <div class="site-header__inner">
-      <a href="{% url 'posts:feed' %}" class="brand">
-        <span class="brand__logo">
-          <i class="fa-solid fa-dove"></i>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased min-h-screen flex flex-col">
+  {% if request.resolver_match.url_name == 'login' or request.resolver_match.url_name == 'register' or request.resolver_match.url_name == 'landing' %}
+    {% block auth_content %}{% endblock %}
+  {% else %}
+
+  <!-- Top navigation bar (Deep Navy from Mockup Screens 4-15) -->
+  <header class="sticky top-0 z-40 bg-[#1E1B4B] text-white border-b border-[#28245C] shadow-md">
+    <div class="max-w-[1400px] mx-auto px-4 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <a href="{% url 'posts:feed' %}" class="flex items-center gap-2.5 text-white font-extrabold text-xl tracking-tight shrink-0 hover:opacity-95 transition">
+        <span class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand to-indigo-400 grid place-items-center text-white shadow-inner">
+          <i class="fa-solid fa-dove text-base"></i>
         </span>
-        <span class="brand__name">Social<span>Nest</span></span>
+        <span>SocialNest</span>
       </a>
 
-      {% block header_search %}
-      <form class="header-search" action="{% url 'posts:explore' %}" method="get">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" name="q" placeholder="Search posts, people, topics..." value="{{ request.GET.q|default:'' }}">
+      <!-- Center Search Bar (Mockup Dark Pill Style) -->
+      <form action="{% url 'posts:explore' %}" method="get" class="flex-1 max-w-md relative hidden md:block">
+        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+        <input type="text" name="q" placeholder="Search SocialNest..." value="{{ request.GET.q|default:'' }}"
+          class="w-full pl-10 pr-4 py-2 bg-[#28245C]/70 hover:bg-[#28245C] focus:bg-[#28245C] rounded-full text-sm text-white placeholder-slate-400 outline-none focus:ring-2 focus:ring-brand/50 border border-slate-700/60 transition">
       </form>
-      {% endblock %}
 
-      <nav class="header-nav">
-        <a href="{% url 'posts:feed' %}" class="header-nav__link {% if request.resolver_match.url_name == 'feed' %}is-active{% endif %}">
-          <i class="fa-solid fa-house"></i><span>Home</span>
-        </a>
-        <a href="{% url 'posts:feed' %}#posts" class="header-nav__link">
-          <i class="fa-solid fa-table-cells-large"></i><span>Feed</span>
-        </a>
-        <a href="{% url 'notifications:list' %}" class="header-nav__link {% if 'notifications' in request.path %}is-active{% endif %}">
-          <i class="fa-regular fa-bell"></i><span>Notifications</span>
-          {% if unread_notifications_count %}<span class="badge" id="navNotifBadge">{{ unread_notifications_count }}</span>{% else %}<span class="badge" id="navNotifBadge" style="display:none;" hidden>0</span>{% endif %}
-        </a>
-        <a href="{% url 'posts:explore' %}" class="header-nav__link {% if request.resolver_match.url_name == 'explore' %}is-active{% endif %}">
-          <i class="fa-regular fa-compass"></i><span>Explore</span>
-        </a>
-
-        {% if request.resolver_match.url_name != 'login' and request.resolver_match.url_name != 'register' %}
-        <button type="button" class="header-icon-btn theme-toggle" aria-label="Switch to dark mode" aria-pressed="false" title="Switch to dark mode">
-          <i class="fa-solid fa-moon" aria-hidden="true"></i>
+      <!-- Right Action Icons -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <button type="button" id="themeToggle" title="Toggle Theme"
+          class="w-9 h-9 grid place-items-center rounded-full text-slate-300 hover:text-white hover:bg-white/10 transition">
+          <i class="fa-solid fa-moon"></i>
         </button>
-        {% endif %}
 
-        {% if user.is_authenticated %}
-          <a href="{% url 'chat:inbox' %}" class="header-nav__link {% if 'chat' in request.path %}is-active{% endif %}">
-            <i class="fa-regular fa-message"></i><span>Messages</span>
-            {% if chat_unread %}<span class="badge">{{ chat_unread }}</span>{% endif %}
-          </a>
-          <a href="{% url 'accounts:own_profile' %}" class="header-avatar" title="{{ user.username }}">
+        <a href="{% url 'chat:inbox' %}" title="Messages"
+          class="w-9 h-9 grid place-items-center rounded-full text-slate-300 hover:text-white hover:bg-white/10 relative transition">
+          <i class="fa-regular fa-comment-dots text-base"></i>
+          {% if chat_unread %}
+            <span class="absolute 1 top-0.5 right-0.5 bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 grid place-items-center px-1 shadow">
+              {{ chat_unread }}
+            </span>
+          {% endif %}
+        </a>
+
+        <a href="{% url 'notifications:list' %}" title="Notifications"
+          class="w-9 h-9 grid place-items-center rounded-full text-slate-300 hover:text-white hover:bg-white/10 relative transition">
+          <i class="fa-regular fa-bell text-base"></i>
+          {% if unread_notifications_count %}
+            <span class="absolute top-0.5 right-0.5 bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 grid place-items-center px-1 shadow">
+              {{ unread_notifications_count }}
+            </span>
+          {% endif %}
+        </a>
+
+        <!-- User Profile Avatar Pill -->
+        <a href="{% url 'accounts:own_profile' %}" class="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-white/10 transition ml-1">
+          <div class="w-8 h-8 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-xs ring-2 ring-indigo-400/50">
             {% if user.profile.avatar %}
-              <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}">
+              <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="w-full h-full object-cover">
             {% else %}
-              <span class="avatar-fallback">{{ user.username|first|upper }}</span>
+              {{ user.username|first|upper }}
             {% endif %}
-          </a>
-          <form action="{% url 'accounts:logout' %}" method="post" class="logout-form">
-            {% csrf_token %}
-            <button type="submit" class="header-icon-btn" title="Log out">
-              <i class="fa-solid fa-arrow-right-from-bracket"></i>
-            </button>
-          </form>
-        {% else %}
-          <a href="{% url 'accounts:login' %}" class="btn btn--primary btn--sm">Log in</a>
-        {% endif %}
-      </nav>
+          </div>
+        </a>
+      </div>
     </div>
   </header>
 
-  {% if messages %}
-    <div class="flash-wrap">
-      {% for message in messages %}
-        <div class="flash flash--{{ message.tags }}">{{ message }}</div>
-      {% endfor %}
-    </div>
+  <!-- App Body Layout -->
+  <div class="max-w-[1400px] w-full mx-auto px-4 flex gap-6 py-6 flex-1">
+    
+    <!-- Left Navigation Sidebar (Mockup Screens 4-15) -->
+    <aside class="hidden lg:block w-60 shrink-0 sticky top-24 self-start">
+      <nav class="bg-white rounded-2xl border border-slate-100 p-3 shadow-sm space-y-1">
+        
+        <!-- Home -->
+        <a href="{% url 'posts:feed' %}" class="flex items-center gap-3.5 px-4 py-2.5 rounded-xl font-semibold text-sm transition {% if request.resolver_match.url_name == 'feed' %}bg-brand-light text-brand{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <i class="fa-solid fa-house w-4 text-center"></i>
+          <span>Home</span>
+        </a>
+
+        <!-- Explore -->
+        <a href="{% url 'posts:explore' %}" class="flex items-center gap-3.5 px-4 py-2.5 rounded-xl font-semibold text-sm transition {% if request.resolver_match.url_name == 'explore' %}bg-brand-light text-brand{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <i class="fa-solid fa-compass w-4 text-center"></i>
+          <span>Explore</span>
+        </a>
+
+        <!-- Messages -->
+        <a href="{% url 'chat:inbox' %}" class="flex items-center gap-3.5 px-4 py-2.5 rounded-xl font-semibold text-sm transition {% if request.resolver_match.app_name == 'chat' %}bg-brand-light text-brand{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <i class="fa-regular fa-comment-dots w-4 text-center"></i>
+          <span>Messages</span>
+          {% if chat_unread %}
+            <span class="ml-auto bg-brand text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] grid place-items-center px-1">
+              {{ chat_unread }}
+            </span>
+          {% endif %}
+        </a>
+
+        <!-- Notifications -->
+        <a href="{% url 'notifications:list' %}" class="flex items-center gap-3.5 px-4 py-2.5 rounded-xl font-semibold text-sm transition {% if request.resolver_match.app_name == 'notifications' %}bg-brand-light text-brand{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <i class="fa-regular fa-bell w-4 text-center"></i>
+          <span>Notifications</span>
+          {% if unread_notifications_count %}
+            <span class="ml-auto bg-brand text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] grid place-items-center px-1">
+              {{ unread_notifications_count }}
+            </span>
+          {% endif %}
+        </a>
+
+        <!-- Friends -->
+        <a href="{% url 'accounts:friends' %}" class="flex items-center gap-3.5 px-4 py-2.5 rounded-xl font-semibold text-sm transition {% if request.resolver_match.url_name == 'friends' %}bg-brand-light text-brand{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <i class="fa-solid fa-user-group w-4 text-center"></i>
+          <span>Friends</span>
+        </a>
+
+        <!-- Profile -->
+        <a href="{% url 'accounts:own_profile' %}" class="flex items-center gap-3.5 px-4 py-2.5 rounded-xl font-semibold text-sm transition {% if request.resolver_match.url_name == 'own_profile' %}bg-brand-light text-brand{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <i class="fa-regular fa-user w-4 text-center"></i>
+          <span>Profile</span>
+        </a>
+
+        <!-- Settings -->
+        <a href="{% url 'accounts:settings' %}" class="flex items-center gap-3.5 px-4 py-2.5 rounded-xl font-semibold text-sm transition {% if request.resolver_match.url_name == 'settings' or request.resolver_match.url_name == 'blocked_users' %}bg-brand-light text-brand{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <i class="fa-solid fa-gear w-4 text-center"></i>
+          <span>Settings</span>
+        </a>
+
+        <!-- Divider -->
+        <div class="border-t border-slate-100 my-2 pt-1"></div>
+
+        <!-- Logout -->
+        <form action="{% url 'accounts:logout' %}" method="post">{% csrf_token %}
+          <button type="submit" class="w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl font-semibold text-sm text-red-500 hover:bg-red-50 transition">
+            <i class="fa-solid fa-arrow-right-from-bracket w-4 text-center"></i>
+            <span>Logout</span>
+          </button>
+        </form>
+      </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 min-w-0">
+      {% if messages %}
+        <div class="mb-4 space-y-2">
+          {% for message in messages %}
+            <div class="toast-enter px-4 py-3 rounded-xl text-sm font-medium {% if message.tags == 'error' %}bg-red-50 text-red-600 border border-red-100{% else %}bg-emerald-50 text-emerald-700 border border-emerald-100{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
   {% endif %}
 
-  <main class="page">
-    {% block content %}{% endblock %}
-  </main>
-
-  <footer class="site-footer">
-    <p>&copy; 2024 Social Nest &bull; Help Center &bull; Privacy Policy &bull; Terms of Service</p>
-  </footer>
-
-  {% if request.resolver_match.url_name != 'login' and request.resolver_match.url_name != 'register' %}
   <script>
-    (function () {
-      var toggle = document.querySelector('.theme-toggle');
-      if (!toggle) return;
-
-      function updateToggle(isDark) {
-        toggle.setAttribute('aria-pressed', String(isDark));
-        toggle.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
-        toggle.setAttribute('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
-        toggle.innerHTML = isDark
-          ? '<i class="fa-solid fa-sun" aria-hidden="true"></i>'
-          : '<i class="fa-solid fa-moon" aria-hidden="true"></i>';
+    (function(){
+      const t = document.getElementById('themeToggle');
+      if (t) {
+        t.addEventListener('click', () => {
+          document.documentElement.classList.toggle('dark');
+          const dark = document.documentElement.classList.contains('dark');
+          t.innerHTML = dark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+          try { localStorage.setItem('socialnest-theme', dark ? 'dark' : 'light'); } catch(e){}
+        });
+        if (document.documentElement.classList.contains('dark')) t.innerHTML = '<i class="fa-solid fa-sun"></i>';
       }
-
-      var isDark = document.documentElement.dataset.theme === 'dark';
-      updateToggle(isDark);
-      toggle.addEventListener('click', function () {
-        isDark = document.documentElement.dataset.theme !== 'dark';
-        if (isDark) {
-          document.documentElement.dataset.theme = 'dark';
-        } else {
-          delete document.documentElement.dataset.theme;
-        }
-        updateToggle(isDark);
-        try {
-          localStorage.setItem('socialnest-theme', isDark ? 'dark' : 'light');
-        } catch (error) {
-          console.warn('Unable to save the theme preference.', error);
-        }
-      });
     })();
   </script>
-  {% endif %}
-  <script src="{% static 'js/app.js' %}" defer></script>
+  <!-- Global Media Lightbox Viewer (Full Screen for Images & Videos) -->
+  <div id="mediaLightbox" class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md hidden place-items-center p-3 sm:p-6" role="dialog" aria-modal="true">
+    <!-- Close Button -->
+    <button id="lightboxClose" type="button" class="absolute top-5 right-5 sm:top-6 sm:right-6 w-11 h-11 rounded-full bg-white/15 hover:bg-white/30 text-white grid place-items-center text-lg transition z-50 shadow-xl cursor-pointer" title="Close (Esc)">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <!-- Open original resolution -->
+    <a id="lightboxOpenExternal" href="#" target="_blank" class="absolute top-5 right-20 sm:top-6 sm:right-20 w-11 h-11 rounded-full bg-white/15 hover:bg-white/30 text-white grid place-items-center text-base transition z-50 shadow-xl" title="Open full resolution">
+      <i class="fa-solid fa-arrow-up-right-from-square"></i>
+    </a>
+
+    <!-- Media Container -->
+    <div class="relative max-w-full max-h-full flex items-center justify-center pointer-events-auto">
+      <img id="lightboxImg" src="" alt="Full view" class="max-w-[95vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl hidden select-none">
+      <video id="lightboxVideo" src="" controls autoplay playsinline class="max-w-[95vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl hidden bg-black"></video>
+    </div>
+  </div>
+
+  <script src="{% static 'js/app.js' %}?v=2" defer></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

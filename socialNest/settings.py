@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'posts',
     'notifications',
     'chat',
+    'stories',
 ]
 
 MIDDLEWARE = [
@@ -147,18 +148,40 @@ MAILERS = {
     },
 }
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
-}
+import os
 
-# Redis alternative for multi-process or production use:
-# CHANNEL_LAYERS = {
-#     'default': {
-#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
-#         'CONFIG': {
-#             'hosts': [('127.0.0.1', 6379)],
-#         },
-#     },
-# }
+# Channel layer: use Redis when CHANNELS_REDIS_URL is set (production),
+# otherwise fall back to the in-memory layer for local development.
+CHANNELS_REDIS_URL = os.environ.get('CHANNELS_REDIS_URL', '').strip()
+
+if CHANNELS_REDIS_URL:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [CHANNELS_REDIS_URL],
+            },
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
+
+# WebRTC ICE servers are exposed to the client call page.
+# Configure TURN via environment variables in production.
+WEBRTC_ICE_SERVERS = [
+    {'urls': 'stun:stun.l.google.com:19302'},
+]
+_turn_url = os.environ.get('WEBRTC_TURN_URL', '').strip()
+if _turn_url:
+    WEBRTC_ICE_SERVERS.append({
+        'urls': _turn_url,
+        'username': os.environ.get('WEBRTC_TURN_USERNAME', ''),
+        'credential': os.environ.get('WEBRTC_TURN_CREDENTIAL', ''),
+    })
+
+# Voice message upload limits.
+CHAT_MAX_VOICE_BYTES = 10 * 1024 * 1024

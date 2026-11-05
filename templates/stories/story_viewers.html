@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Story Viewers &bull; Social Nest{% endblock %}
+{% block extra_head %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/chat.css' %}" />
+{% endblock %}
+{% block content %}
+<section class="card chat-inbox-card">
+  <h1>Story Viewers</h1>
+  <ul class="chat-inbox">
+    {% for v in viewers %}
+    <li class="chat-inbox__item">
+      <a class="chat-inbox__link" href="{% url 'accounts:profile_detail' v.viewer.username %}">
+        <span class="chat-inbox__avatar">{{ v.viewer.username|first|upper }}</span>
+        <span class="chat-inbox__details">
+          <strong class="chat-inbox__username">{{ v.viewer.username }}</strong>
+          <span class="chat-inbox__preview">{{ v.viewed_at|timesince }} ago</span>
+        </span>
+      </a>
+    </li>
+    {% empty %}
+    <li class="chat-inbox__empty">No viewers yet.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

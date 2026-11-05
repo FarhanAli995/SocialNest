@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Friends &bull; SocialNest{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6 pb-12">
+
+  <!-- Header Card & Tabs (Mockup Screen 10) -->
+  <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
+    <div class="flex items-center gap-8 border-b border-slate-100 text-sm font-bold">
+      <button type="button" class="text-slate-500 hover:text-slate-800 pb-3 transition">Friends</button>
+      <button type="button" class="text-brand border-b-2 border-brand pb-3 transition">Requests</button>
+      <button type="button" class="text-slate-500 hover:text-slate-800 pb-3 transition">Suggestions</button>
+    </div>
+  </div>
+
+  <!-- Friend Requests Section (Mockup Screen 10) -->
+  <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-4">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-sm font-extrabold text-slate-900 tracking-tight">Friend Requests ({{ followers|length }})</h2>
+    </div>
+
+    <div class="space-y-3">
+      {% for f in followers %}
+        <div class="flex items-center justify-between gap-4 p-3 rounded-2xl hover:bg-slate-50 transition border border-slate-50">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <a href="{% url 'accounts:profile_detail' f.follower.username %}" class="w-12 h-12 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-sm shrink-0 ring-2 ring-indigo-50">
+              {% if f.follower.profile.avatar %}
+                <img src="{{ f.follower.profile.avatar.url }}" alt="{{ f.follower.username }}" class="w-full h-full object-cover">
+              {% else %}
+                {{ f.follower.username|first|upper }}
+              {% endif %}
+            </a>
+            <div class="min-w-0">
+              <a href="{% url 'accounts:profile_detail' f.follower.username %}" class="font-bold text-slate-900 text-sm hover:underline block truncate">
+                {{ f.follower.get_full_name|default:f.follower.username }}
+              </a>
+              <span class="text-xs text-slate-400 block truncate">@{{ f.follower.username }}</span>
+            </div>
+          </div>
+
+          <!-- Accept / Decline Buttons (Mockup Screen 10) -->
+          <div class="flex items-center gap-2 shrink-0">
+            <form method="post" action="{% url 'accounts:follow_toggle' f.follower.username %}">
+              {% csrf_token %}
+              <button type="submit" class="bg-brand hover:bg-brand-dark text-white text-xs font-semibold px-4 py-1.5 rounded-full transition shadow-xs">
+                Accept
+              </button>
+            </form>
+            <form method="post" action="{% url 'accounts:block_toggle' f.follower.username %}">
+              {% csrf_token %}
+              <button type="submit" class="border border-slate-200 hover:border-slate-300 text-slate-600 hover:bg-slate-100 text-xs font-semibold px-4 py-1.5 rounded-full transition">
+                Decline
+              </button>
+            </form>
+          </div>
+        </div>
+      {% empty %}
+        <p class="text-xs text-slate-400 py-3 text-center">No pending friend requests.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- People You May Know Section (Mockup Screen 10) -->
+  <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-4">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-sm font-extrabold text-slate-900 tracking-tight">People You May Know</h2>
+      <a href="{% url 'posts:explore' %}" class="text-xs font-semibold text-brand hover:underline">See All</a>
+    </div>
+
+    <div class="space-y-3">
+      {% for u in suggestions %}
+        <div class="flex items-center justify-between gap-4 p-3 rounded-2xl hover:bg-slate-50 transition border border-slate-50">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <a href="{% url 'accounts:profile_detail' u.username %}" class="w-11 h-11 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-xs shrink-0 ring-2 ring-indigo-50">
+              {% if u.profile.avatar %}
+                <img src="{{ u.profile.avatar.url }}" alt="{{ u.username }}" class="w-full h-full object-cover">
+              {% else %}
+                {{ u.username|first|upper }}
+              {% endif %}
+            </a>
+            <div class="min-w-0">
+              <a href="{% url 'accounts:profile_detail' u.username %}" class="font-bold text-slate-900 text-sm hover:underline block truncate">
+                {{ u.get_full_name|default:u.username }}
+              </a>
+              <span class="text-xs text-slate-400 block truncate">@{{ u.username }}</span>
+            </div>
+          </div>
+
+          <form method="post" action="{% url 'accounts:follow_toggle' u.username %}">
+            {% csrf_token %}
+            <button type="submit" class="bg-indigo-50 hover:bg-brand text-brand hover:text-white text-xs font-semibold px-4 py-1.5 rounded-full transition">
+              Add Friend
+            </button>
+          </form>
+        </div>
+      {% empty %}
+        <p class="text-xs text-slate-400 py-3 text-center">No suggestions right now.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+

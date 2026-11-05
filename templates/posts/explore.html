@@ -1,97 +1,117 @@
 {% extends 'base.html' %}
-{% block title %}Explore &bull; Social Nest{% endblock %}
+{% load static %}
+{% block title %}Search & Explore &bull; SocialNest{% endblock %}
 
 {% block content %}
-<div class="explore-head">
-  <h1 class="section-title">Explore</h1>
-  <form class="explore-search" action="{% url 'posts:explore' %}" method="get">
-    <i class="fa-solid fa-magnifying-glass"></i>
-    <input type="text" name="q" placeholder="Search posts, people, topics..." value="{{ query }}">
-  </form>
-</div>
+<div class="max-w-2xl mx-auto space-y-6 pb-12">
+  
+  <!-- Search Header Card (Mockup Screen 9) -->
+  <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-4">
+    
+    <!-- Search Bar Input -->
+    <form action="{% url 'posts:explore' %}" method="get" class="relative">
+      <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+      <input type="text" name="q" placeholder="Search users..." value="{{ query|default:'' }}" autofocus
+        class="w-full pl-11 pr-4 py-3 bg-slate-50 hover:bg-slate-100 focus:bg-white rounded-2xl text-sm outline-none focus:ring-2 focus:ring-brand/30 border border-slate-200 transition">
+    </form>
 
-{% if query %}
-  <p class="explore-note">Showing results for &ldquo;<strong>{{ query }}</strong>&rdquo;</p>
-{% endif %}
-
-{% if people %}
-<section class="explore-section">
-  <h2 class="explore-subtitle"><i class="fa-solid fa-user-group"></i> People</h2>
-  <div class="people-grid">
-    {% for person in people %}
-      <a href="{% url 'accounts:profile_detail' person.username %}" class="card people-card">
-        <span class="people-card__avatar">
-          {% if person.profile.avatar %}
-            <img src="{{ person.profile.avatar.url }}" alt="{{ person.username }}">
-          {% else %}
-            <span class="avatar-fallback" style="font-size:22px;">{{ person.username|first|upper }}</span>
-          {% endif %}
-        </span>
-        <span class="people-card__name">{{ person.get_full_name|default:person.username }}</span>
-        <span class="people-card__handle">@{{ person.username }}</span>
-        {% if person.profile.bio %}
-          <span class="people-card__bio">{{ person.profile.bio|truncatechars:60 }}</span>
-        {% endif %}
-      </a>
-    {% endfor %}
+    <!-- Filter Tabs (Mockup Screen 9: All, Users, Posts, Groups) -->
+    <div class="flex items-center gap-6 border-b border-slate-100 pt-2 text-sm font-bold">
+      <button type="button" class="text-brand border-b-2 border-brand pb-3 transition">All</button>
+      <button type="button" class="text-slate-500 hover:text-slate-800 pb-3 transition">Users</button>
+      <button type="button" class="text-slate-500 hover:text-slate-800 pb-3 transition">Posts</button>
+      <button type="button" class="text-slate-500 hover:text-slate-800 pb-3 transition">Groups</button>
+    </div>
   </div>
-</section>
-{% endif %}
 
-<section class="explore-section">
-  <h2 class="explore-subtitle"><i class="fa-solid fa-compass"></i> Posts</h2>
-  <div class="explore-posts">
-    {% for post in posts %}
-      <article class="card explore-post">
-        <div class="post-card__head">
-          <a href="{% url 'accounts:profile_detail' post.author.username %}" class="avatar avatar--sm">
-            {% if post.author.profile.avatar %}
-              <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}">
-            {% else %}
-              <span class="avatar-fallback">{{ post.author.username|first|upper }}</span>
-            {% endif %}
-          </a>
-          <div class="post-card__meta">
-            <a href="{% url 'accounts:profile_detail' post.author.username %}" class="post-card__author">{{ post.author.username }}</a>
-            <div class="post-card__time">{{ post.created_at|timesince }} ago</div>
+  <!-- Users Results List (Mockup Screen 9) -->
+  <div class="space-y-3">
+    {% if people %}
+      {% for person in people %}
+        <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm flex items-center justify-between gap-4 hover:border-slate-200 transition">
+          
+          <!-- User info -->
+          <div class="flex items-center gap-3.5 min-w-0">
+            <a href="{% url 'accounts:profile_detail' person.username %}" class="w-12 h-12 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-sm shrink-0 ring-2 ring-indigo-50">
+              {% if person.profile.avatar %}
+                <img src="{{ person.profile.avatar.url }}" alt="{{ person.username }}" class="w-full h-full object-cover">
+              {% else %}
+                {{ person.username|first|upper }}
+              {% endif %}
+            </a>
+            <div class="min-w-0">
+              <a href="{% url 'accounts:profile_detail' person.username %}" class="font-bold text-slate-900 text-sm hover:underline truncate block">
+                {{ person.get_full_name|default:person.username }}
+              </a>
+              <span class="text-xs text-slate-400 block truncate">@{{ person.username }}</span>
+              {% if person.profile.bio %}
+                <p class="text-[11px] text-slate-500 truncate mt-0.5">{{ person.profile.bio }}</p>
+              {% endif %}
+            </div>
           </div>
-        </div>
 
-        {% if post.text %}
-          <div class="explore-post__body">{{ post.text|linebreaksbr }}</div>
-        {% endif %}
+          <!-- Follow / Action Button -->
+          <div class="shrink-0">
+            {% if person == user %}
+              <span class="text-xs text-slate-400 font-medium px-4 py-2">You</span>
+            {% else %}
+              <form method="post" action="{% url 'accounts:follow_toggle' person.username %}">
+                {% csrf_token %}
+                <button type="submit"
+                  class="bg-brand hover:bg-brand-dark text-white text-xs font-semibold px-6 py-2 rounded-full transition shadow-sm shadow-brand/20">
+                  Follow
+                </button>
+              </form>
+            {% endif %}
+          </div>
 
-        <div class="explore-post__media">
-          {% if post.image %}
-            <a href="{% url 'posts:post_detail' post.pk %}" class="explore-post__media-link">
-              <img src="{{ post.image.url }}" alt="Post image">
-            </a>
-          {% elif post.video %}
-            <video controls src="{{ post.video.url }}"></video>
-          {% else %}
-            <a href="{% url 'posts:post_detail' post.pk %}" class="explore-post__placeholder">
-              <i class="fa-regular fa-image"></i>
-            </a>
-          {% endif %}
         </div>
-
-        <div class="post-card__actions">
-          <form method="post" action="{% url 'posts:like_toggle' post.pk %}" class="inline-form">
-            {% csrf_token %}
-            <button type="submit" class="post-action {% if post.pk in liked_ids %}is-liked{% endif %}">
-              {% if post.pk in liked_ids %}<i class="fa-solid fa-heart"></i>{% else %}<i class="fa-regular fa-heart"></i>{% endif %}
-              <span>{{ post.likes_count }}</span>
-            </button>
-          </form>
-          <a href="{% url 'posts:post_detail' post.pk %}" class="post-action"><i class="fa-regular fa-comment"></i> <span>{{ post.comments_count }}</span></a>
+      {% endfor %}
+    {% else %}
+      <div class="bg-white rounded-3xl border border-slate-100 p-12 text-center text-slate-400 shadow-sm">
+        <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 grid place-items-center text-2xl mx-auto mb-3">
+          <i class="fa-solid fa-magnifying-glass"></i>
         </div>
-      </article>
-    {% empty %}
-      <div class="card empty">
-        <i class="fa-regular fa-compass"></i>
-        <p>{% if query %}No posts match your search.{% else %}No posts to explore yet.{% endif %}</p>
+        <p class="text-sm font-semibold text-slate-700">No users found</p>
+        <p class="text-xs text-slate-400 mt-1">Try searching by username or full name.</p>
       </div>
-    {% endfor %}
+    {% endif %}
   </div>
-</section>
+
+  <!-- Posts Results Section if available -->
+  {% if posts %}
+    <div class="pt-4 space-y-4">
+      <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-2">Related Posts</h3>
+      {% for post in posts %}
+        <article class="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm space-y-3">
+          <div class="flex items-center gap-3">
+            <a href="{% url 'accounts:profile_detail' post.author.username %}" class="w-9 h-9 rounded-full overflow-hidden bg-brand text-white grid place-items-center font-bold text-xs">
+              {% if post.author.profile.avatar %}
+                <img src="{{ post.author.profile.avatar.url }}" alt="" class="w-full h-full object-cover">
+              {% else %}
+                {{ post.author.username|first|upper }}
+              {% endif %}
+            </a>
+            <div>
+              <a href="{% url 'accounts:profile_detail' post.author.username %}" class="text-xs font-bold text-slate-900 hover:underline">
+                {{ post.author.get_full_name|default:post.author.username }}
+              </a>
+              <span class="text-[10px] text-slate-400 block">{{ post.created_at|timesince }} ago</span>
+            </div>
+          </div>
+          {% if post.text %}<p class="text-xs text-slate-700 leading-relaxed">{{ post.text }}</p>{% endif %}
+          {% if post.image %}
+            <div class="relative group overflow-hidden rounded-xl">
+              <img src="{{ post.image.url }}" alt="" class="w-full max-h-60 rounded-xl object-cover cursor-pointer lightbox-media hover:opacity-95 transition">
+              <button type="button" class="js-lightbox-btn absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/75 text-white grid place-items-center opacity-0 group-hover:opacity-100 transition shadow z-10" data-media="{{ post.image.url }}" data-type="image" title="Open in full screen">
+                <i class="fa-solid fa-expand text-[10px]"></i>
+              </button>
+            </div>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+</div>
 {% endblock %}

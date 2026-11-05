@@ -1,22 +1,54 @@
-{% extends 'base.html' %} {% block title %}Blocked users &bull; Social Nest{% endblock %} {% block content %}
-<section class="card">
-  <h1>Blocked users</h1>
-  <ul>
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Blocked Users &bull; SocialNest{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-5 pb-12">
+  
+  <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">Blocked Users</h1>
+      <p class="text-xs text-slate-400 mt-0.5">Manage accounts you have blocked from contacting you</p>
+    </div>
+    <a href="{% url 'accounts:settings' %}" class="text-xs font-semibold text-brand hover:underline">
+      Back to Settings
+    </a>
+  </div>
+
+  <div class="bg-white rounded-3xl border border-slate-100 p-3 sm:p-4 shadow-sm divide-y divide-slate-100">
     {% for block in blocks %}
-    <li>
-      {{ block.blocked.username }}
-      <form
-        method="post"
-        action="{% url 'accounts:block_toggle' block.blocked.username %}"
-        class="inline-form"
-      >
-        {% csrf_token %}
-        <button type="submit" class="btn btn--outline">Unblock</button>
-      </form>
-    </li>
+      <div class="flex items-center justify-between gap-4 p-3.5 rounded-2xl hover:bg-slate-50 transition">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-10 h-10 rounded-full overflow-hidden bg-slate-200 text-slate-600 grid place-items-center font-bold text-xs shrink-0">
+            {% if block.blocked.profile.avatar %}
+              <img src="{{ block.blocked.profile.avatar.url }}" alt="" class="w-full h-full object-cover">
+            {% else %}
+              {{ block.blocked.username|first|upper }}
+            {% endif %}
+          </div>
+          <div class="min-w-0">
+            <span class="font-bold text-slate-900 text-sm block truncate">{{ block.blocked.username }}</span>
+            <span class="text-[11px] text-slate-400 block">Blocked user</span>
+          </div>
+        </div>
+
+        <form method="post" action="{% url 'accounts:block_toggle' block.blocked.username %}">
+          {% csrf_token %}
+          <button type="submit" class="border border-slate-200 hover:border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold px-4 py-1.5 rounded-full transition">
+            Unblock
+          </button>
+        </form>
+      </div>
     {% empty %}
-    <li>You haven't blocked anyone.</li>
+      <div class="p-12 text-center text-slate-400">
+        <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 grid place-items-center text-lg mx-auto mb-2">
+          <i class="fa-solid fa-user-shield"></i>
+        </div>
+        <p class="text-xs font-semibold text-slate-700">No blocked users</p>
+        <p class="text-[11px] text-slate-400 mt-0.5">You haven't blocked anyone yet.</p>
+      </div>
     {% endfor %}
-  </ul>
-</section>
+  </div>
+
+</div>
 {% endblock %}

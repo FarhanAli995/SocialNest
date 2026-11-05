@@ -14,8 +14,10 @@ from .forms import CommentForm, PostForm
 from .models import Comment, Follow, Like, Post
 
 
-@login_required
 def feed(request):
+    if not request.user.is_authenticated:
+        return redirect('landing')
+
     query = request.GET.get('q', '').strip()
 
     if request.user.is_authenticated:

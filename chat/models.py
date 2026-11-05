@@ -39,6 +39,13 @@ class ChatRoom(models.Model):
 
 
 class Message(models.Model):
+    TEXT = 'text'
+    VOICE = 'voice'
+    MESSAGE_TYPE_CHOICES = [
+        (TEXT, 'Text'),
+        (VOICE, 'Voice'),
+    ]
+
     room = models.ForeignKey(
         ChatRoom,
         on_delete=models.CASCADE,
@@ -48,7 +55,17 @@ class Message(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
     )
-    content = models.TextField()
+    content = models.TextField(blank=True)
+    message_type = models.CharField(
+        max_length=10,
+        choices=MESSAGE_TYPE_CHOICES,
+        default=TEXT,
+    )
+    audio_file = models.FileField(
+        upload_to='chat/voice/',
+        blank=True,
+    )
+    audio_duration = models.PositiveIntegerField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     is_read = models.BooleanField(default=False)
 
@@ -92,3 +109,50 @@ class MessageReaction(models.Model):
 
     def __str__(self):
         return f'{self.reaction} on message {self.message_id} by {self.user_id}'
+
+
+class Call(models.Model):
+    RINGING = 'ringing'
+    ACCEPTED = 'accepted'
+    REJECTED = 'rejected'
+    ENDED = 'ended'
+    MISSED = 'missed'
+    STATUS_CHOICES = [
+        (RINGING, 'Ringing'),
+        (ACCEPTED, 'Accepted'),
+        (REJECTED, 'Rejected'),
+        (ENDED, 'Ended'),
+        (MISSED, 'Missed'),
+    ]
+
+    call_type = models.CharField(max_length=10, default='video')
+    room = models.ForeignKey(
+        ChatRoom,
+        on_delete=models.CASCADE,
+        related_name='calls',
+    )
+    caller = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='calls_made',
+    )
+    receiver = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='calls_received',
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default=RINGING,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    duration = models.PositiveIntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Call {self.pk} ({self.status})'
